@@ -52,7 +52,7 @@ export function onlineDurum(m) {
 const HAMLE_TIPLERI = ['pas', 'gec', 'oyna', 'degistir', 'alti', 'sigorta', 'satinal'];
 async function onlineIsle(m) {
   if (!online) return;
-  Object.assign(online, { benim: m.benim, sahipMi: m.sahipMi, koltuklar: m.koltuklar, secimler: m.secimler || {}, hazir: m.hazir || {}, kod: m.kod,
+  Object.assign(online, { benim: m.benim, sahipMi: m.sahipMi, koltuklar: m.koltuklar, secimler: m.secimler || {}, hazir: m.hazir || {}, oto: m.oto || {}, kod: m.kod,
     sayac: m.sayac ? { ...m.sayac, bitis: Date.now() + m.sayac.kalan } : null });
   if (!m.g) return;
   const once = N.g, yeni = m.g, t = m.olay && m.olay.tip;
@@ -327,19 +327,22 @@ function panelCiz0() {
           <span class="toplam ${p.net >= 0 ? 'art' : 'eks'}">= ${tutar(p.net) || '$0'}</span></div>` : '').join('')}</div>`;
     }
     if (online) {
-      const ben = online.benim, hz = online.hazir || {};
+      const ben = online.benim, hz = online.hazir || {}, oto = online.oto || {};
       const benimO = ben >= 0 ? g.oyuncular[ben] : null;
       const yetmez = benimO && benimO.fis < 4 * g.ante;
-      const hazirim = !!hz[ben];
+      const hazirim = !!hz[ben], otom = !!oto[ben];
       pn.innerHTML = `<div class="bekleme">${ozet}
-        <div class="mola-satir">${g.oyuncular.map((o, i) => `<span class="mola-dugme ${hz[i] ? 'hazir' : ''}">${kacis(o.ad)} · ${hz[i] ? 'hazır' : o.fis < 4 * g.ante ? 'parası bitti' : 'bekleniyor'}</span>`).join('')}</div>
+        <div class="mola-satir">${g.oyuncular.map((o, i) => `<span class="mola-dugme ${hz[i] ? 'hazir' : ''}">${kacis(o.ad)} · ${hz[i] ? (oto[i] ? 'otomatik' : 'hazır') : o.fis < 4 * g.ante ? 'parası bitti' : 'bekleniyor'}</span>`).join('')}</div>
         <div class="satir" style="width:min(640px,100%)">
           ${online.sahipMi ? '<button class="btn-ikincil" id="n-yukle">Para yükle</button>' : ''}
-          <button class="btn-ana" id="n-hazir" ${ben < 0 || yetmez || hazirim ? 'disabled' : ''}>${hazirim ? 'Hazırsın ✓' : el ? 'Sonraki ele gir' : 'İlk ele gir'}</button>
+          <button class="btn-ikincil ${otom ? 'oto-acik' : ''}" id="n-oto" ${ben < 0 || (yetmez && !otom) ? 'disabled' : ''}>Otomatik: ${otom ? 'Açık' : 'Kapalı'}</button>
+          ${hazirim ? '<button class="btn-tehlike" id="n-iptal">İptal</button>' : `<button class="btn-ana" id="n-hazir" ${ben < 0 || yetmez ? 'disabled' : ''}>${el ? 'Sonraki ele gir' : 'İlk ele gir'}</button>`}
         </div>
-        <div class="hata">${kacis(hata)}${hata ? ' ' : ''}${yetmez ? (online.sahipMi ? 'Paran bitti: kendine para yükleyebilirsin.' : 'Paran bitti; masayı açan para yüklerse oyuna dönebilirsin.') : !hazirim && ben >= 0 ? 'Basmazsan bu eli dışarıda geçirirsin.' : ''}</div></div>`;
+        <div class="hata">${kacis(hata)}${hata ? ' ' : ''}${yetmez ? (online.sahipMi ? 'Paran bitti: kendine para yükleyebilirsin.' : 'Paran bitti; masayı açan para yüklerse oyuna dönebilirsin.') : hazirim ? (otom ? 'Otomatik oynuyorsun: parası yettikçe her ele girersin. Karar vermezsen 5 sn sonra kart çekmeden geçilir, son kararda pas.' : 'Bu ele giriyorsun; vazgeçmek için İptal.') : ben >= 0 ? 'Basmazsan bu eli dışarıda geçirirsin.' : ''}</div></div>`;
       if ($('n-yukle')) $('n-yukle').onclick = yukleAc;
-      $('n-hazir').onclick = () => { ses.acil(); konus.kilidiAc(); online.gonder({ tip: 'hazir' }); };
+      if ($('n-hazir')) $('n-hazir').onclick = () => { ses.acil(); konus.kilidiAc(); online.gonder({ tip: 'hazir' }); };
+      if ($('n-iptal')) $('n-iptal').onclick = () => online.gonder({ tip: 'hazir', iptal: true });
+      $('n-oto').onclick = () => { ses.acil(); konus.kilidiAc(); online.gonder({ tip: 'oto', acik: !otom }); };
       return;
     }
     pn.innerHTML = `<div class="bekleme">${ozet}

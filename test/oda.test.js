@@ -123,3 +123,52 @@ test('Ultimate masası: oyun ilk girişte seçilir; eşzamanlı karar; süre dol
   assert.ok(gorunum(o, 'a').g.el.krupiye[0], 'el bitince kasa kartları görünür');
   assert.ok(gorunum(o, 'a').g.el.oyuncular[1].kartlar[0], 'el bitince herkesin kartı görünür');
 });
+
+test('otomatik oyna: her el kendiliğinden hazır, 5 sn içinde iptal edilebilir, karar süresi 5 sn', () => {
+  const o = yeniOda('OT');
+  isle(o, 'a', { tip: 'katil', ad: 'A' }, 0); isle(o, 'b', { tip: 'katil', ad: 'B' }, 0);
+  isle(o, 'a', { tip: 'basla' }, 0);
+  isle(o, 'a', { tip: 'oto', acik: true }, 0);
+  isle(o, 'b', { tip: 'oto', acik: true }, 0);
+  assert.deepEqual(o.hazir, { 0: true, 1: true }, 'otomatik açan hazır sayılır');
+  assert.equal(o.g.el, null, 'hepsi otomatikse hemen değil, geri sayımla dağıtılır');
+  assert.equal(o.sayac.tip, 'hazir');
+  // B geri sayımda vazgeçer: hazır ve otomatik kapanır
+  isle(o, 'b', { tip: 'hazir', iptal: true }, 100);
+  assert.deepEqual(o.hazir, { 0: true }); assert.equal(o.oto[1], undefined);
+  sureDoldu(o, o.sayac.bitis);
+  assert.ok(o.g.el && o.g.el.oyuncular[0].katildi && !o.g.el.oyuncular[1].katildi, 'yalnız A ele girdi');
+  // A otomatik: karar süresi 5 sn; karar vermezse varsayılan (çekmez, sonra pas)
+  assert.equal(o.sayac.sure, SURE.otoKarar);
+  assert.equal(gorunum(o, 'a').sayac.toplam, SURE.otoKarar);
+  let t = o.sayac.bitis, son = t;
+  for (let k = 0; k < 6 && o.g.el.faz !== 'bitti'; k++) { son = t; sureDoldu(o, t); if (o.sayac) t = o.sayac.bitis; }
+  assert.equal(o.g.el.faz, 'bitti');
+  assert.equal(o.g.el.oyuncular[0].durum, 'pas', 'karar vermeyen otomatik oyuncu son kararda pas');
+  // El bitince A yine kendiliğinden hazır; sonuç görünsün diye ek bekleme var
+  assert.deepEqual(o.hazir, { 0: true });
+  assert.equal(o.sayac.tip, 'hazir');
+  assert.equal(o.sayac.bitis - son, SURE.sonucPayi + SURE.hazir);
+});
+
+test('otomatik oynayan parası bitince ele girmez ve otomatiği kapanır', () => {
+  const o = yeniOda('OP');
+  isle(o, 'a', { tip: 'katil', ad: 'A' }, 0); isle(o, 'a', { tip: 'basla' }, 0);
+  o.g.oyuncular[0].fis = 10;
+  isle(o, 'a', { tip: 'oto', acik: true }, 0);
+  assert.deepEqual(o.hazir, {});
+  isle(o, 'a', { tip: 'ad', ad: 'Ayşe' }, 0);
+  assert.equal(o.oto[0], undefined);
+});
+
+test('Ultimate: otomatik oyuncu 5 sn içinde karar vermezse kontrol, river\'da pas', () => {
+  const o = yeniOda('UO');
+  isle(o, 'a', { tip: 'katil', ad: 'A', oyun: 'ultimate' }, 0);
+  isle(o, 'a', { tip: 'basla' }, 0);
+  isle(o, 'a', { tip: 'oto', acik: true }, 0);
+  sureDoldu(o, o.sayac.bitis);
+  assert.equal(o.g.el.faz, 'preflop');
+  assert.equal(o.sayac.sure, SURE.otoKarar);
+  let k = 0; while (o.g.el.faz !== 'bitti' && k++ < 5) sureDoldu(o, o.sayac.bitis);
+  assert.equal(o.g.el.oyuncular[0].durum, 'pas');
+});

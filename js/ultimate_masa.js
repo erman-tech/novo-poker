@@ -30,7 +30,7 @@ export function ultimateOnlineDurum(m) {
 
 async function isle(m) {
   if (!api) return;
-  Object.assign(api, { benim: m.benim, sahipMi: m.sahipMi, koltuklar: m.koltuklar, hazir: m.hazir || {}, kod: m.kod,
+  Object.assign(api, { benim: m.benim, sahipMi: m.sahipMi, koltuklar: m.koltuklar, hazir: m.hazir || {}, oto: m.oto || {}, kod: m.kod,
     sayac: m.sayac ? { ...m.sayac, bitis: Date.now() + m.sayac.kalan } : null });
   if (!m.g) return;
   const once = g, yeni = m.g, t = m.olay && m.olay.tip;
@@ -154,10 +154,10 @@ function panelCiz() {
   const el = g.el, ben = api ? api.benim : -1;
   let html = api && api.sayac ? geriSayimHtml() : '';
   if (!el || el.faz === 'bitti') {
-    const hz = api.hazir || {};
+    const hz = api.hazir || {}, oto = api.oto || {};
     const o = ben >= 0 ? g.oyuncular[ben] : null;
     const yetmez = o && o.fis < gereken(g, ben);
-    const hazirim = !!hz[ben];
+    const hazirim = !!hz[ben], otom = !!oto[ben];
     let ozet = '';
     if (el) {
       const tut = v => (v > 0 ? '+' : v < 0 ? '−' : '') + (v ? para(Math.abs(v)) : '');
@@ -167,17 +167,20 @@ function panelCiz() {
           <span class="toplam ${p.net >= 0 ? 'art' : 'eks'}">= ${tut(p.net) || '$0'}</span></div>` : '').join('')}</div>`;
     }
     html += `<div class="bekleme">${ozet}
-      <div class="mola-satir">${g.oyuncular.map((x, i) => `<span class="mola-dugme ${hz[i] ? 'hazir' : ''}">${kacis(x.ad)} · ${hz[i] ? 'hazır' : x.fis < gereken(g, i) ? 'parası bitti' : 'bekleniyor'}</span>`).join('')}</div>
+      <div class="mola-satir">${g.oyuncular.map((x, i) => `<span class="mola-dugme ${hz[i] ? 'hazir' : ''}">${kacis(x.ad)} · ${hz[i] ? (oto[i] ? 'otomatik' : 'hazır') : x.fis < gereken(g, i) ? 'parası bitti' : 'bekleniyor'}</span>`).join('')}</div>
       <div class="satir" style="width:min(640px,100%)">
         ${api.sahipMi ? '<button class="btn-ikincil" id="u-yukle">Para yükle</button>' : ''}
         ${o ? `<button class="btn-ikincil" id="u-trips">Trips: ${o.trips ? 'Açık' : 'Kapalı'}</button>` : ''}
-        <button class="btn-ana" id="u-hazir" ${ben < 0 || yetmez || hazirim ? 'disabled' : ''}>${hazirim ? 'Hazırsın ✓' : el ? 'Sonraki ele gir' : 'İlk ele gir'}</button>
+        <button class="btn-ikincil ${otom ? 'oto-acik' : ''}" id="u-oto" ${ben < 0 || (yetmez && !otom) ? 'disabled' : ''}>Otomatik: ${otom ? 'Açık' : 'Kapalı'}</button>
+        ${hazirim ? '<button class="btn-tehlike" id="u-iptal">İptal</button>' : `<button class="btn-ana" id="u-hazir" ${ben < 0 || yetmez ? 'disabled' : ''}>${el ? 'Sonraki ele gir' : 'İlk ele gir'}</button>`}
       </div>
-      <div class="hata">${kacis(hata)}${hata ? ' ' : ''}${yetmez ? (api.sahipMi ? 'Paran yetmiyor: kendine para yükleyebilirsin.' : 'Paran yetmiyor; masayı açan para yüklerse dönebilirsin.') : !hazirim && ben >= 0 ? `Giriş: ante ${para(g.ante)} + blind ${para(g.ante)}${o && o.trips ? ` + trips ${para(g.ante)}` : ''}. Basmazsan bu eli dışarıda geçirirsin.` : ''}</div></div>`;
+      <div class="hata">${kacis(hata)}${hata ? ' ' : ''}${yetmez ? (api.sahipMi ? 'Paran yetmiyor: kendine para yükleyebilirsin.' : 'Paran yetmiyor; masayı açan para yüklerse dönebilirsin.') : hazirim ? (otom ? 'Otomatik oynuyorsun: parası yettikçe her ele girersin. Karar vermezsen 5 sn sonra kontrol, river\'da pas.' : 'Bu ele giriyorsun; vazgeçmek için İptal.') : ben >= 0 ? `Giriş: ante ${para(g.ante)} + blind ${para(g.ante)}${o && o.trips ? ` + trips ${para(g.ante)}` : ''}. Basmazsan bu eli dışarıda geçirirsin.` : ''}</div></div>`;
     pn.innerHTML = html;
     if ($('u-yukle')) $('u-yukle').onclick = yukleAc;
     if ($('u-trips')) $('u-trips').onclick = () => api.gonder({ tip: 'trips', acik: !o.trips });
-    $('u-hazir').onclick = () => { ses.acil(); api.gonder({ tip: 'hazir' }); };
+    if ($('u-hazir')) $('u-hazir').onclick = () => { ses.acil(); api.gonder({ tip: 'hazir' }); };
+    if ($('u-iptal')) $('u-iptal').onclick = () => api.gonder({ tip: 'hazir', iptal: true });
+    $('u-oto').onclick = () => { ses.acil(); api.gonder({ tip: 'oto', acik: !otom }); };
     geriSayimGuncelle();
     return;
   }
