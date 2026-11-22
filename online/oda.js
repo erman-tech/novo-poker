@@ -119,12 +119,29 @@ export function bekleyenleriOturt(oda) {
 
 // Bir istemcinin isteğini uygular. Dönüş: { olay } (yayınlanacak animasyon ipucu) ya da { hata }.
 export function islem(oda, id, m) {
+  // Bağlantısı kopan oyuncunun koltuğu korunur; aynı kimlikle mesaj gelince bağlı sayılır.
+  if (m && m.tip !== 'koptu' && oda.kopuk && oda.kopuk.includes(id)) oda.kopuk = oda.kopuk.filter(x => x !== id);
   const i = koltugu(oda, id);
   const g = oda.g;
   try {
     switch (m && m.tip) {
       case 'katil': {
         if (i >= 0) { const ad = adTemizle(m.ad); if (ad) adDegistir(oda, i, ad); return { olay: { tip: 'katil', koltuk: i } }; }
+        {
+          // Kodu bilen, bağlantısı kopmuş kendi koltuğuna başka cihazdan / tarayıcıdan aynı adla döner
+          // (Erman 22 Kas: Fidan sonradan gelip giremiyordu; eski koltuğu "Bu ad masada var" diyordu).
+          const ad = adTemizle(m.ad);
+          const j = ad ? oda.koltuklar.findIndex(k => !k.bos && k.ad.toLocaleLowerCase('tr') === ad.toLocaleLowerCase('tr') && (oda.kopuk || []).includes(k.id)) : -1;
+          if (j >= 0) {
+            const eski = oda.koltuklar[j].id;
+            oda.koltuklar[j].id = id;
+            if (oda.sahip === eski) oda.sahip = id;
+            oda.kopuk = oda.kopuk.filter(x => x !== eski);
+            oda.izleyenler = (oda.izleyenler || []).filter(x => x.id !== id);
+            oda.bekleyen = (oda.bekleyen || []).filter(x => x.id !== id);
+            return { olay: { tip: 'katil', koltuk: j } };
+          }
+        }
         if (g) {
           // Oyun başladıysa ve masada yer varsa: el aradaysa hemen oturur, el sürüyorsa el bitince.
           oda.bekleyen = oda.bekleyen || [];
@@ -320,6 +337,7 @@ export function islem(oda, id, m) {
       }
       case 'koptu': {
         // Bağlantısı kapanan izleyici / sıradaki listeden düşer (masadakilerin koltuğu korunur).
+        if (i >= 0) { oda.kopuk = [...new Set([...(oda.kopuk || []), id])]; return {}; }
         const once = (oda.izleyenler || []).length + (oda.bekleyen || []).length;
         oda.izleyenler = (oda.izleyenler || []).filter(x => x.id !== id);
         oda.bekleyen = (oda.bekleyen || []).filter(x => x.id !== id);

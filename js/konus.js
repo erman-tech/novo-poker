@@ -12,6 +12,7 @@ export const PARCALAR = {
   sigortadan: 'sigortadan', dolar_kazanir: 'dolar kazanır.', sigortayi_kaybetti: 'sigortayı kaybetti.',
   dolar_odeme: 'dolar ödeme.', kat_odeme: 'kat ödeme.', tebrikler: 'Tebrikler', ve: 've',
   kaybetti: 'kaybetti.', berabere: 'berabere.', ante_yandi: 'ante yandı.',
+  komsu_expressten: "komşu express'ten", kasa_expressten: "kasa express'ten",
   bonus_odeme: 'bonus ödeme,', dealer_change: 'Dealer change.', dolar: 'dolar.', seslendirme_acik: 'Seslendirme açık.',
   // kasanın açtığı el
   kasa_AK: 'Kasa as papaz.', kasa_1: 'Kasa per.', kasa_2: 'Kasa iki per.', kasa_3: 'Kasa üçlü.',
@@ -119,10 +120,13 @@ function cihazla(m) {
 }
 
 // Bir cümle söyle. parcalar: anahtar dizisi (iç içe dizi olabilir) ya da {anahtar, metin}.
+// Masadan çıkınca sürmekte olan animasyonlar konuşmasın
+let suskun = false;
+export function sus(v) { suskun = !!v; if (suskun) dur(); }
 let zincir = Promise.resolve();
 const caliyor = new Set(); // sırada/çalan kayıtlar: dur() hepsini keser
 export function soyle(...parcalar) {
-  if (!acikMi() || !sesAcikMi()) return;
+  if (!acikMi() || !sesAcikMi() || suskun) return;
   const liste = parcalar.flat(3);
   zincir = zincir.then(async () => {
     const k = await listeYukle();

@@ -362,3 +362,21 @@ test('iki oyuncu sigorta yapınca da kasaya kart çektir sorusu gelir ve süresi
   assert.equal(o.sayac.tip, 'oyunsuz');
   assert.equal(o.sayac.bitis, SURE.karar + SURE.acilisPayi + 2 * SURE.sigortaPayi);
 });
+
+test('bağlantısı kopan oyuncu başka cihazdan aynı adla kendi koltuğuna döner', () => {
+  const o = yeniOda('DONUS1');
+  islem(o, 'cihaz-1', { tip: 'katil', ad: 'Erman', oyun: 'novo' });
+  islem(o, 'fidan-eski', { tip: 'katil', ad: 'Fidan' });
+  islem(o, 'cihaz-1', { tip: 'basla' });
+  // Bağlıyken aynı adla başkası giremez
+  assert.match(islem(o, 'fidan-yeni', { tip: 'katil', ad: 'Fidan' }).hata || '', /Bu ad masada var/);
+  isle(o, 'fidan-eski', { tip: 'koptu' });
+  const r = islem(o, 'fidan-yeni', { tip: 'katil', ad: 'fidan' });
+  assert.equal(r.olay.tip, 'katil');
+  assert.equal(gorunum(o, 'fidan-yeni').benim, 1, 'yeni cihaz eski koltuğu aldı');
+  assert.equal(gorunum(o, 'fidan-eski').benim, -1);
+  // Masayı açan da dönerse sahipliği taşınır
+  isle(o, 'cihaz-1', { tip: 'koptu' });
+  islem(o, 'cihaz-2', { tip: 'katil', ad: 'Erman' });
+  assert.equal(gorunum(o, 'cihaz-2').sahipMi, true);
+});

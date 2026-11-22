@@ -649,3 +649,49 @@ input, select {
 .sohbet-form .btn-ana { padding: 8px 12px; }
 
 .izleyen-not { position: fixed; left: 12px; bottom: 12px; z-index: 59; max-width: calc(100vw - 90px); padding: 6px 12px; border-radius: 12px; background: #0b2a1cdd; border: 1px solid #ffffff22; font-size: 13px; color: #e8f1ea; }
+/* display:flex [hidden] niteliğini eziyordu: sohbet kutusu kapalıyken de ekranda kalıyordu */
+.sohbet-kutu[hidden], .sohbet-dugme[hidden], .izleyen-not[hidden] { display: none; }
+
+/* Yatay telefon: dar ekranda üç oyuncunun kartları birbirine giriyordu (Erman 22 Kas).
+   Kart boyu masa genişliğinden türer ve kartlar yelpaze gibi %30 üst üste biner; köşedeki
+   değer ve renk açık kalır. 6. kartla da oyuncu payına (masanın üçte biri) sığar. */
+#e-novo.ytel .nspot .nkartlar, #e-ultimate.ytel .uspot .ukartlar {
+  --kart-gen: min(32px, calc((100vw - var(--panel-gen)) * .072)); gap: 0; }
+#e-novo.ytel .nspot .nkartlar > .kart + .kart, #e-ultimate.ytel .uspot .ukartlar > .kart + .kart { margin-left: calc(var(--kart-gen) * -.3); }
+/* Karar paneli: düğmeler sığsın, taşmasın */
+#e-novo.ytel .eylem-paneli, #e-ultimate.ytel .eylem-paneli { overflow-x: hidden; }
+#e-novo.ytel .eylem-paneli .dugmeler button, #e-ultimate.ytel .eylem-paneli .dugmeler button { min-width: 0; white-space: normal; overflow-wrap: anywhere; font-size: 13px; line-height: 1.2; }
+#e-novo.ytel .eylem-paneli .satir > button, #e-ultimate.ytel .eylem-paneli .satir > button { flex: 1 1 0; min-width: 0; white-space: normal; padding-left: 6px; padding-right: 6px; font-size: 13px; }
+
+/* Sohbet: küçük, yarı saydam, sol üstte (Erman 22 Kas) */
+.sohbet-dugme { top: calc(44px + env(safe-area-inset-top)); bottom: auto; left: calc(10px + env(safe-area-inset-left)); right: auto;
+  width: 34px; height: 34px; font-size: 16px; border-width: 1px; background: #0b2a1c88; opacity: .85; }
+.sohbet-dugme b { min-width: 16px; height: 16px; line-height: 16px; font-size: 10px; padding: 0 4px; }
+.sohbet-kutu { top: calc(84px + env(safe-area-inset-top)); bottom: auto; left: calc(10px + env(safe-area-inset-left)); right: auto;
+  width: min(250px, calc(100vw - 24px)); max-height: min(240px, 50vh); padding: 6px 8px; gap: 5px; font-size: 13px;
+  background: #0b2a1caa; border-width: 1px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.sohbet-kutu .sohbet-ust b { font-size: 13px; }
+.sohbet-kutu input { padding: 6px 8px; font-size: 13px; }
+.sohbet-kutu .btn-ana { padding: 6px 10px; font-size: 13px; }
+.sohbet-kutu[hidden], .sohbet-dugme[hidden] { display: none; }
+.sohbet-kutu .sohbet-liste { font-size: 13px; min-height: 50px; gap: 4px; }
+
+/* Yan express fişleri (kasaya / komşuya) bahis dairelerinin altında */
+.nyanlar { display: flex; gap: 6px; justify-content: center; min-height: 0; }
+.nyanlar:empty { display: none; }
+.nyan { display: flex; align-items: center; gap: 4px; padding: 1px 7px 1px 3px; border-radius: 999px; background: #0008; border: 1px solid #ffd76566; font-size: 11px; color: #ffe9a8; white-space: nowrap; }
+.nyan b { color: #fff; }
+.nyan.kazandi { border-color: #3ecf6e; box-shadow: 0 0 10px #3ecf6e66; }
+.nyan.kazandi b { color: #8ff0a3; }
+.nyan.kaybetti { opacity: .45; }
+#e-novo.ytel .nyanlar { gap: 3px; }
+#e-novo.ytel .nyan { font-size: 9px; padding: 0 5px 0 2px; gap: 2px; }
+/* Yatay telefon el arası: ana düğme üstte tam genişlik, diğer ikisi altında yan yana (taşmasın) */
+#e-novo.ytel .eylem-paneli .bekleme .satir, #e-ultimate.ytel .eylem-paneli .bekleme .satir { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+#e-novo.ytel .eylem-paneli .bekleme .satir > .btn-ana, #e-ultimate.ytel .eylem-paneli .bekleme .satir > .btn-ana { grid-column: 1 / -1; order: -1; }
+/* Sohbet şeffaf: arkası (masa) görünür, yazı gölgeyle okunur (Erman 22 Kas) */
+.sohbet-kutu { background: rgba(8, 30, 20, .32); border-color: #ffffff22; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
+.sohbet-kutu, .sohbet-kutu .sohbet-satir, .sohbet-kutu .sohbet-bos { text-shadow: 0 1px 2px #000, 0 0 6px #000c; }
+.sohbet-kutu input { background: rgba(0, 0, 0, .3); border: 1px solid #ffffff33; color: #fff; }
+.sohbet-kutu .btn-ana { opacity: .9; }
+.sohbet-dugme { background: rgba(8, 30, 20, .35); }

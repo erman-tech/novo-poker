@@ -42,10 +42,12 @@ export function novoDevam() {
   return true;
 }
 
-export function onlineAc(api) { online = api; N = { g: null, gecmis: [] }; maske = null; mesgul = false; krupiyeKur($('n-krupiye-kadin')); }
-export function onlineKapat() { online = null; N = null; maske = null; mesgul = false; }
+export function onlineAc(api) { konus.sus(false); ses.ortamSustur(false); online = api; N = { g: null, gecmis: [] }; maske = null; mesgul = false; krupiyeKur($('n-krupiye-kadin')); }
+export function onlineKapat() { konus.sus(true); ses.ortamSustur(true); online = null; N = null; maske = null; mesgul = false; }
 let onlineKuyruk = Promise.resolve();
 export function onlineDurum(m) {
+  // Ayarlarım penceresi animasyon kuyruğunu beklemeden son seçimi göstersin
+  if (online && m.g && m.benim >= 0 && m.g.oyuncular[m.benim]) online.sonYan = m.g.oyuncular[m.benim].yan || {};
   onlineKuyruk = onlineKuyruk.then(() => onlineIsle(m)).catch(e => { console.error(e); mesgul = false; maske = null; if (N && N.g) ciz(); });
   return onlineKuyruk;
 }
@@ -263,12 +265,27 @@ function ciz() {
     // Koltuk numarası ve bu elde kime yan express oynadığı (kasaya / komşunun adı)
     const yanNot = p && p.katildi && (p.yanKasa || p.yanKomsu)
       ? `<div class="yan-not">express → ${[p.yanKasa ? 'kasa' : '', p.yanKomsu && g.oyuncular[p.yanKomsu.kime] ? `${p.yanKomsu.kime + 1}. ${kacis(g.oyuncular[p.yanKomsu.kime].ad)}` : ''].filter(Boolean).join(' · ')}</div>` : '';
-    levha.innerHTML = `<div class="ad"><span class="koltuk-no">${i + 1}</span>${kacis(o.ad)}${o.mola ? ' <span class="mola-etiket">MOLADA</span>' : ''}</div><div class="fis-sayi">${para(gosterilenFis(o, p))}</div>${yanNot}` +
+    levha.innerHTML = `<div class="ad"><span class="koltuk-no">${i + 1}</span>${kacis(o.ad)}${o.mola ? ' <span class="mola-etiket">MOLADA</span>' : ''}</div><div class="fis-sayi">${para(gosterilenFis(o, p))}</div>` +
       oyuncuHesap(g, o, p, el);
     const yig = document.createElement('div'); yig.className = 'yigin-yeri';
     if (gosterilenFis(o, p) > 0) yig.appendChild(yiginEl(gosterilenFis(o, p), { cesitli: true, boyut: 20, enCok: 7 }));
     levha.appendChild(yig);
-    s.append(kartlar, etiket, daireler, levha);
+    // Yan express masada fişle görünür: "kasaya $25", "2 numaraya $25" (Erman 22 Kas).
+    const yanlar = document.createElement('div'); yanlar.className = 'nyanlar';
+    if (p && p.katildi) {
+      const yanKalem = (y, yazi) => {
+        if (!y || !(y.bahis > 0)) return;
+        const k = document.createElement('div'); k.className = 'nyan';
+        const bitti = el.faz === 'bitti';
+        if (bitti) k.classList.add(y.odeme > 0 ? 'kazandi' : 'kaybetti');
+        k.appendChild(yiginEl(y.bahis, { boyut: 14, enCok: 2 }));
+        k.insertAdjacentHTML('beforeend', `<span>${yazi}</span><b>${bitti && y.odeme > 0 ? '+' + para(y.odeme) : para(y.bahis)}</b>`);
+        yanlar.appendChild(k);
+      };
+      yanKalem(p.yanKasa, 'Kasaya');
+      if (p.yanKomsu) yanKalem(p.yanKomsu, `${p.yanKomsu.kime + 1} no'ya`);
+    }
+    s.append(kartlar, etiket, daireler, yanlar, levha);
     alan.appendChild(s);
   });
   panelCiz();
@@ -700,6 +717,10 @@ async function sonAnimasyon(once, yeni) {
     else if (t === 'berabere') konus.soyle(konus.oyuncu(i), 'berabere');
     else if (t === 'oyunyok' && p.satinAldi) konus.soyle(konus.oyuncu(i), 'berabere');
   }
+  // Kasaya express kazananı (kasanın ilk 5 kartına göre, el sonunda ödenir)
+  for (const [p, i] of spotlar) {
+    if (p.yanKasa && p.yanKasa.odeme > 0) konus.soyle(konus.oyuncu(i), 'kasa_expressten', konus.sayi(p.yanKasa.odeme - p.yanKasa.bahis), 'dolar_kazanir');
+  }
   // Elif konuşurken ödeme yapılmaz; fişler konuşma bitince gider, çip sesi sonda bir kez çalar.
   await konus.bitince();
   sessizOdeme = true;
@@ -809,6 +830,10 @@ async function dagitAnimasyon(yeni) {
       konus.soyle(konus.oyuncu(i), 'bonus_odeme', konus.el(bonusAnahtari(p.ilk)), konus.sayi(p.bonusOdeme - p.bonus), 'dolar');
     }
   }
+  // Komşuya express kazananı: "Bir numara komşu express'ten 75 dolar kazanır" (Erman 22 Kas)
+  for (const [p, i] of spotlar) {
+    if (p.yanKomsu && p.yanKomsu.odeme > 0) konus.soyle(konus.oyuncu(i), 'komsu_expressten', konus.sayi(p.yanKomsu.odeme - p.yanKomsu.bahis), 'dolar_kazanir');
+  }
   await konus.bitince();
   sessizOdeme = true;
   for (const [p, i] of spotlar) {
@@ -891,7 +916,7 @@ function oyuncuAyar(i) {
 // Online: kendi ayarların. Her dokunuş sunucuya gider; pencere kapanır, durum gelince panel güncellenir.
 function benimAyar() {
   const ben = online.benim, o = N.g.oyuncular[ben]; if (!o) return;
-  const y = o.yan || {}, otom = !!(online.oto || {})[ben], mola = o.mola || online.molaIstek;
+  const y = online.sonYan || o.yan || {}, otom = !!(online.oto || {})[ben], mola = o.mola || online.molaIstek;
   const yetmez = o.fis < 4 * N.g.ante;
   perdeAc(`<div style="font-size:20px;font-weight:800">Ayarlarım</div>
     <div class="mola-satir" style="flex-direction:column">
@@ -904,10 +929,12 @@ function benimAyar() {
     <div class="ne" style="color:var(--soluk);font-size:13px">Express seçimleri bir sonraki elde geçerli; komşun sağındaki oyuncu. El sürerken oyundan çıkarsan el bitince çıkarsın.</div>
     <button class="btn-ana" id="ba-tamam">Tamam</button>`, k => {
     const git = m => { online.gonder(m); perdeKapat(); };
+    // Express ve otomatik seçimlerinde pencere açık kalır: sunucu cevabıyla yeniden çizilir (ikisi birlikte seçilebilsin)
+    const sec = m => { online.gonder(m); perdeKapat(); setTimeout(benimAyar, 350); };
     k.querySelector('#ba-mola').onclick = () => git({ tip: 'mola', mola: !mola });
-    k.querySelector('#ba-oto').onclick = () => { if (yetmez && !otom) return; git({ tip: 'oto', acik: !otom }); };
-    k.querySelector('#ba-kasa').onclick = () => git({ tip: 'yan', kasa: !y.kasa });
-    if (k.querySelector('#ba-komsu')) k.querySelector('#ba-komsu').onclick = () => git({ tip: 'yan', komsu: !y.komsu });
+    k.querySelector('#ba-oto').onclick = () => { if (yetmez && !otom) return; sec({ tip: 'oto', acik: !otom }); };
+    k.querySelector('#ba-kasa').onclick = () => sec({ tip: 'yan', kasa: !y.kasa });
+    if (k.querySelector('#ba-komsu')) k.querySelector('#ba-komsu').onclick = () => sec({ tip: 'yan', komsu: !y.komsu });
     k.querySelector('#ba-tamam').onclick = perdeKapat;
     k.querySelector('#ba-kalk').onclick = async () => { perdeKapat(); if (await onayla('Masadan kalkılsın mı? Koltuğun boşalır, çiplerin masada kalmaz; sırada bekleyen oturur.', 'Kalk')) online.gonder({ tip: 'kalk' }); };
   });

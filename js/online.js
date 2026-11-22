@@ -143,7 +143,10 @@ function sohbetOkundu() {
 }
 function sohbetGuncelle(m) {
   sohbetKur();
-  $('sohbet-dugme').hidden = false;
+  // Sohbet yalnız oyun başlayınca (Erman 22 Kas): lobide düğme ve kutu yok.
+  const oyunVar = !!m.g;
+  $('sohbet-dugme').hidden = !oyunVar;
+  if (!oyunVar) { $('sohbet-kutu').hidden = true; sohbetAcik = false; }
   const l = m.sohbet || [];
   const liste = $('sohbet-liste');
   liste.innerHTML = l.length ? l.map(x => `<div class="sohbet-satir"><b>${x.no ? x.no + '. ' : ''}${kacis(x.ad)}</b> ${kacis(x.metin)}</div>`).join('') : '<div class="sohbet-bos">Henüz mesaj yok.</div>';

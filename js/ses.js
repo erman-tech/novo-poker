@@ -42,10 +42,16 @@ try { ortamAcik = localStorage.getItem('poker.ortam') !== '0'; } catch (e) {}
 let ortamKaynak = null, ortamKazanc = null, ortamIstendi = false;
 const ORTAM_SES = 0.096; // 17 Kas: %20 kısıldı
 export function ortamAcikMi() { return ortamAcik; }
+// Masadan çıkınca arka plan uğultusu susar, masaya dönünce geri gelir (Erman 22 Kas: çıkınca ses geliyordu)
+let ortamSusuk = true; // ana ekranda sessiz; masa açılınca açılır
+export function ortamSustur(v) {
+  ortamSusuk = !!v;
+  if (ortamKazanc && ctx) ortamKazanc.gain.setTargetAtTime(ortamAcik && acik && !ortamSusuk ? ORTAM_SES : 0, ctx.currentTime, 0.2);
+}
 export function ortamAyarla(v) {
   ortamAcik = !!v;
   try { localStorage.setItem('poker.ortam', ortamAcik ? '1' : '0'); } catch (e) {}
-  if (ortamKazanc && ctx) ortamKazanc.gain.setTargetAtTime(ortamAcik && acik ? ORTAM_SES : 0, ctx.currentTime, 0.3);
+  if (ortamKazanc && ctx) ortamKazanc.gain.setTargetAtTime(ortamAcik && acik && !ortamSusuk ? ORTAM_SES : 0, ctx.currentTime, 0.3);
   if (ortamAcik) ortamBaslat();
 }
 function ortamBaslat() {
@@ -58,7 +64,7 @@ function ortamBaslat() {
       ortamKazanc = ctx.createGain(); ortamKazanc.gain.value = 0;
       ortamKaynak.connect(ortamKazanc).connect(ctx.destination);
       ortamKaynak.start();
-      ortamKazanc.gain.setTargetAtTime(ortamAcik && acik ? ORTAM_SES : 0, ctx.currentTime, 1.5);
+      ortamKazanc.gain.setTargetAtTime(ortamAcik && acik && !ortamSusuk ? ORTAM_SES : 0, ctx.currentTime, 1.5);
     }).catch(() => { ortamIstendi = false; });
 }
 

@@ -17,11 +17,11 @@ let kurulu = false;
 const KARAR_YAZI = { kontrol: 'Kontrol', bet4: '4x bahis', bet3: '3x bahis', bet2: '2x bahis', bet1: '1x bahis', pas: 'Pas' };
 const FAZ_AD = { preflop: 'Preflop', flop: 'Flop', river: 'Turn ve river', bitti: 'Sonuç' };
 
-export function ultimateOnlineAc(a) {
+export function ultimateOnlineAc(a) { ses.ortamSustur(false);
   api = a; g = null; mesgul = false; hata = '';
   if (!kurulu) bagla();
 }
-export function ultimateOnlineKapat() { api = null; g = null; mesgul = false; }
+export function ultimateOnlineKapat() { ses.ortamSustur(true); api = null; g = null; mesgul = false; }
 export function ultimateOnlineHata(t) { hata = t; if (g) panelCiz(); }
 export function ultimateOnlineDurum(m) {
   kuyruk = kuyruk.then(() => isle(m)).catch(e => { console.error(e); mesgul = false; if (g) ciz(); });
