@@ -8,7 +8,7 @@ import * as ses from './ses.js';
 
 // Yayındaki sunucu adresi. Yerelde (localhost) yerel deneme sunucusu kullanılır;
 // ?sunucu=wss://… ile elle verilebilir.
-const YAYIN_SUNUCU = '';
+const YAYIN_SUNUCU = 'wss://novo-poker.novo-poker.workers.dev';
 function sunucuAdresi() {
   const q = new URLSearchParams(location.search).get('sunucu');
   if (q) return q.replace(/\/$/, '');
