@@ -260,7 +260,10 @@ function ciz() {
 
     const levha = document.createElement('div'); levha.className = 'nlevha';
     if (o.mola) s.classList.add('mola');
-    levha.innerHTML = `<div class="ad">${kacis(o.ad)}${o.mola ? ' <span class="mola-etiket">MOLADA</span>' : ''}</div><div class="fis-sayi">${para(gosterilenFis(o, p))}</div>` +
+    // Koltuk numarası ve bu elde kime yan express oynadığı (kasaya / komşunun adı)
+    const yanNot = p && p.katildi && (p.yanKasa || p.yanKomsu)
+      ? `<div class="yan-not">express → ${[p.yanKasa ? 'kasa' : '', p.yanKomsu && g.oyuncular[p.yanKomsu.kime] ? `${p.yanKomsu.kime + 1}. ${kacis(g.oyuncular[p.yanKomsu.kime].ad)}` : ''].filter(Boolean).join(' · ')}</div>` : '';
+    levha.innerHTML = `<div class="ad"><span class="koltuk-no">${i + 1}</span>${kacis(o.ad)}${o.mola ? ' <span class="mola-etiket">MOLADA</span>' : ''}</div><div class="fis-sayi">${para(gosterilenFis(o, p))}</div>${yanNot}` +
       oyuncuHesap(g, o, p, el);
     const yig = document.createElement('div'); yig.className = 'yigin-yeri';
     if (gosterilenFis(o, p) > 0) yig.appendChild(yiginEl(gosterilenFis(o, p), { cesitli: true, boyut: 20, enCok: 7 }));
@@ -339,7 +342,7 @@ function panelCiz0() {
       const yetmez = benimO && benimO.fis < 4 * g.ante;
       const hazirim = !!hz[ben], otom = !!oto[ben];
       pn.innerHTML = `<div class="bekleme">${ozet}
-        <div class="mola-satir">${g.oyuncular.map((o, i) => `<span class="mola-dugme ${hz[i] ? 'hazir' : ''}">${kacis(o.ad)} · ${o.mola ? 'oyunda değil' : hz[i] ? (oto[i] ? 'otomatik' : 'hazır') : o.fis < 4 * g.ante ? 'parası bitti' : 'bekleniyor'}</span>`).join('')}</div>
+        <div class="mola-satir">${g.oyuncular.map((o, i) => `<span class="mola-dugme ${hz[i] ? 'hazir' : ''}">${i + 1}. ${kacis(o.ad)} · ${o.mola ? 'oyunda değil' : hz[i] ? (oto[i] ? 'otomatik' : 'hazır') : o.fis < 4 * g.ante ? 'parası bitti' : 'bekleniyor'}</span>`).join('')}</div>
         <div class="satir" style="width:min(640px,100%)">
           ${online.sahipMi ? '<button class="btn-ikincil" id="n-yukle">Para yükle</button>' : ''}
           ${benimO ? '<button class="btn-ikincil" id="n-ayarlarim">Ayarlarım ⚙</button>' : ''}
@@ -353,7 +356,7 @@ function panelCiz0() {
       return;
     }
     pn.innerHTML = `<div class="bekleme">${ozet}
-      <div class="mola-satir">${g.oyuncular.map((o, i) => `<button class="mola-dugme ${o.mola ? 'molada' : ''}" data-ayar="${i}">${kacis(o.ad)} · ${ayarOzet(o)} ⚙</button>`).join('')}</div>
+      <div class="mola-satir">${g.oyuncular.map((o, i) => `<button class="mola-dugme ${o.mola ? 'molada' : ''}" data-ayar="${i}">${i + 1}. ${kacis(o.ad)} · ${ayarOzet(o)} ⚙</button>`).join('')}</div>
       <div class="satir" style="width:min(640px,100%)">
         <button class="btn-ikincil" id="n-yukle">Para yükle</button>
         <button class="btn-ana" id="n-dagit" ${kimse ? 'disabled' : ''}>${el ? 'Sonraki eli dağıt' : 'İlk eli dağıt'}</button>
@@ -599,7 +602,7 @@ async function topluDagit() {
     const iyi = k.ikinci != null || k.ana === 'SF' || k.ana === 'RF' || (typeof k.ana === 'number' && k.ana >= 3);
     if (!iyi) continue;
     ruh('saskin', 1800);
-    konus.soyle('tebrikler', konus.ad(N.g.oyuncular[i].ad), konus.el(k.ana), k.ikinci != null ? ['ve', konus.el(k.ikinci)] : [], konus.sayi(b.oran), 'kat_odeme');
+    konus.soyle('tebrikler', konus.oyuncu(i), konus.el(k.ana), k.ikinci != null ? ['ve', konus.el(k.ikinci)] : [], konus.sayi(b.oran), 'kat_odeme');
   }
   mesgul = false;
   ciz();
@@ -630,10 +633,10 @@ async function sonAnimasyon(once, yeni) {
     const sigortalilar = el.oyuncular.map((p, i) => [p, i]).filter(([p]) => p.katildi && p.sigorta > 0);
     if (el.ilkOyun) {
       konus.soyle(konus.kasaEl(sinif(el.krupiye).anahtar));
-      for (const [, i] of sigortalilar) konus.soyle(konus.ad(g.oyuncular[i].ad), 'sigortayi_kaybetti');
+      for (const [, i] of sigortalilar) konus.soyle(konus.oyuncu(i), 'sigortayi_kaybetti');
     } else {
       konus.soyle('kasa_bos');
-      for (const [p, i] of sigortalilar) konus.soyle(konus.ad(g.oyuncular[i].ad), 'sigortadan', konus.sayi(p.sigorta), 'dolar_kazanir');
+      for (const [p, i] of sigortalilar) konus.soyle(konus.oyuncu(i), 'sigortadan', konus.sayi(p.sigorta), 'dolar_kazanir');
     }
     // Kasa boş açtı: sigorta yapanlar kazandı, bunu büyük söyle
     if (!el.ilkOyun) {
@@ -691,11 +694,11 @@ async function sonAnimasyon(once, yeni) {
     if (t === 'kazandi') {
       const k = kombinasyonlar(p.kartlar);
       const odeme = p.bahis * p.sonuc.oran;
-      konus.soyle(konus.el(k.ana), k.ikinci != null ? ['ve', konus.el(k.ikinci)] : [], konus.ad(ad), konus.sayi(odeme), 'dolar_odeme',
-        odeme >= 10 * el.ante ? ['tebrikler', konus.ad(ad)] : []);
-    } else if (t === 'kaybetti') konus.soyle(konus.ad(ad), 'kaybetti');
-    else if (t === 'berabere') konus.soyle(konus.ad(ad), 'berabere');
-    else if (t === 'oyunyok' && p.satinAldi) konus.soyle(konus.ad(ad), 'berabere');
+      konus.soyle(konus.el(k.ana), k.ikinci != null ? ['ve', konus.el(k.ikinci)] : [], konus.oyuncu(i), konus.sayi(odeme), 'dolar_odeme',
+        odeme >= 10 * el.ante ? ['tebrikler', konus.oyuncu(i)] : []);
+    } else if (t === 'kaybetti') konus.soyle(konus.oyuncu(i), 'kaybetti');
+    else if (t === 'berabere') konus.soyle(konus.oyuncu(i), 'berabere');
+    else if (t === 'oyunyok' && p.satinAldi) konus.soyle(konus.oyuncu(i), 'berabere');
   }
   // Elif konuşurken ödeme yapılmaz; fişler konuşma bitince gider, çip sesi sonda bir kez çalar.
   await konus.bitince();
@@ -803,7 +806,7 @@ async function dagitAnimasyon(yeni) {
     if (p.bonusOdeme) {
       ruh(p.bonusOran >= 30 ? 'saskin' : 'goz', 1600);
       if (p.bonusOran >= 30 && !galaGosterildi) { galaGosterildi = true; gala(true); havaiFisek(); }
-      konus.soyle(konus.ad(g0ad(i)), 'bonus_odeme', konus.el(bonusAnahtari(p.ilk)), konus.sayi(p.bonusOdeme - p.bonus), 'dolar');
+      konus.soyle(konus.oyuncu(i), 'bonus_odeme', konus.el(bonusAnahtari(p.ilk)), konus.sayi(p.bonusOdeme - p.bonus), 'dolar');
     }
   }
   await konus.bitince();
@@ -896,8 +899,9 @@ function benimAyar() {
       ${ayarDugme('ba-oto', 'Otomatik oyna', otom)}
       ${ayarDugme('ba-kasa', `Kasaya express (${para(N.g.ante)})`, y.kasa)}
       ${N.g.oyuncular.length > 1 ? ayarDugme('ba-komsu', `Komşuya express (${para(N.g.ante)})`, y.komsu) : ''}
+      <button class="mola-dugme" id="ba-kalk">Masadan kalk (yerimi sıradakine bırak)</button>
     </div>
-    <div class="ne" style="color:var(--soluk);font-size:13px">Express seçimleri sonraki elde geçerli. El sürerken oyundan çıkarsan el bitince çıkarsın.</div>
+    <div class="ne" style="color:var(--soluk);font-size:13px">Express seçimleri bir sonraki elde geçerli; komşun sağındaki oyuncu. El sürerken oyundan çıkarsan el bitince çıkarsın.</div>
     <button class="btn-ana" id="ba-tamam">Tamam</button>`, k => {
     const git = m => { online.gonder(m); perdeKapat(); };
     k.querySelector('#ba-mola').onclick = () => git({ tip: 'mola', mola: !mola });
@@ -905,6 +909,7 @@ function benimAyar() {
     k.querySelector('#ba-kasa').onclick = () => git({ tip: 'yan', kasa: !y.kasa });
     if (k.querySelector('#ba-komsu')) k.querySelector('#ba-komsu').onclick = () => git({ tip: 'yan', komsu: !y.komsu });
     k.querySelector('#ba-tamam').onclick = perdeKapat;
+    k.querySelector('#ba-kalk').onclick = async () => { perdeKapat(); if (await onayla('Masadan kalkılsın mı? Koltuğun boşalır, çiplerin masada kalmaz; sırada bekleyen oturur.', 'Kalk')) online.gonder({ tip: 'kalk' }); };
   });
 }
 
@@ -932,7 +937,7 @@ function kurallarAc() {
 
 export function novoBagla() {
   krupiyeKur($('n-krupiye-kadin'));
-  $('n-ses').onclick = () => { ses.acil(); ses.sesAyarla(!ses.sesAcikMi()); $('n-ses').textContent = ses.sesAcikMi() ? '🔊' : '🔇'; };
+  $('n-ses').onclick = () => { ses.acil(); ses.sesAyarla(!ses.sesAcikMi()); if (!ses.sesAcikMi()) konus.dur(); $('n-ses').textContent = ses.sesAcikMi() ? '🔊' : '🔇'; };
   $('n-geri').onclick = async () => {
     if (!geriAlinabilir() || mesgul) return;
     if (!(await onayla('Son hamle geri alınsın mı?', 'Geri al'))) return;
@@ -941,6 +946,7 @@ export function novoBagla() {
   };
   $('n-menu').onclick = () => {
     perdeAc(`<div style="font-size:20px;font-weight:800">Novo masası</div>
+      ${online && online.benim >= 0 ? '<button class="btn-ikincil" id="nm-ayarlarim">Ayarlarım ⚙ (express, otomatik, oyundan çık)</button>' : ''}
       <button class="btn-ikincil" id="nm-yukle">Para yükle</button>
       <button class="btn-ikincil" id="nm-konus">Seslendirme: ${konus.acikMi() ? 'Açık' : 'Kapalı'}</button>
       <button class="btn-ikincil" id="nm-ortam">Casino uğultusu: ${ses.ortamAcikMi() ? 'Açık' : 'Kapalı'}</button>
@@ -987,6 +993,7 @@ export function novoBagla() {
         if (!(await onayla(`Herkes yeniden ${para(N.g.baslangicFis)} ile başlasın mı? Kasanın bu oyun sayacı sıfırlanır.`, 'Başlat'))) return;
         gecmiseAt(); N.g = novoYenidenBaslat(N.g); kaydet(); ciz();
       };
+      if (k.querySelector('#nm-ayarlarim')) k.querySelector('#nm-ayarlarim').onclick = () => { perdeKapat(); benimAyar(); };
       if (k.querySelector('#nm-herkes')) k.querySelector('#nm-herkes').onclick = async () => {
         perdeKapat();
         if (await onayla('Masa herkes için kapatılsın mı? Oyun biter, herkes ana ekrana döner.', 'Kapat')) online.gonder({ tip: 'kapat' });

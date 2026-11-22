@@ -79,6 +79,10 @@ function gelen(m) {
     return;
   }
   if (m.tip !== 'durum') return;
+  sohbetGuncelle(m);
+  izleyenGuncelle(m);
+  // Yalnız sohbet değiştiyse oyun ekranı yeniden çizilmez (animasyon bölünmesin).
+  if (m.olay && m.olay.tip === 'sohbet' && son) { son = { ...m, olay: null }; return; }
   // Masayı açan masayı kapattı: herkes ana ekrana döner.
   if (m.olay && m.olay.tip === 'kapandi') { son = null; cik(); $('on-hata').textContent = ''; setTimeout(() => alert('Masa kapatıldı.'), 50); return; }
   son = m;
@@ -98,6 +102,15 @@ function lobiCiz(m) {
       <span class="no">${i + 1}</span><b>${kacis(k.ad)}</b>${i === 0 ? '<span class="etiket">masayı açan</span>' : ''}${i === m.benim ? '<span class="etiket sen">sen</span>' : ''}</div>`).join('')
     + (m.koltuklar.length < 3 ? '<div class="lobi-oyuncu bos">Boş koltuk · kodu paylaş</div>' : '');
   $('l-ad-satir').hidden = m.benim < 0;
+  // Kasaya / komşuya express: oyun başlamadan seçilebilir (Novo), ilk elden geçerli.
+  const yanSatir = $('l-yan');
+  if (yanSatir) {
+    const y = (m.benim >= 0 && m.koltuklar[m.benim].yan) || {};
+    yanSatir.hidden = m.benim < 0 || m.oyun === 'ultimate';
+    yanSatir.innerHTML = `<button class="btn-ikincil ${y.kasa ? 'oto-acik' : ''}" data-lyan="kasa">Kasaya express: ${y.kasa ? 'Açık' : 'Kapalı'}</button>
+      <button class="btn-ikincil ${y.komsu ? 'oto-acik' : ''}" data-lyan="komsu">Komşuya express: ${y.komsu ? 'Açık' : 'Kapalı'}</button>`;
+    yanSatir.querySelectorAll('[data-lyan]').forEach(b => b.onclick = () => { const t = b.dataset.lyan; gonder({ tip: 'yan', [t]: !y[t] }); });
+  }
   if (document.activeElement !== $('l-ad')) $('l-ad').value = m.benim >= 0 ? m.koltuklar[m.benim].ad : '';
   $('l-ayar').querySelectorAll('select').forEach(s => { s.disabled = !m.sahipMi; });
   $('l-ante').value = String(m.ayar.ante);
@@ -107,12 +120,58 @@ function lobiCiz(m) {
     : `Masayı açanın oyunu başlatması bekleniyor. Herkes ${para(m.ayar.baslangicFis)} ile başlar, ante ${para(m.ayar.ante)}.`;
 }
 
+// ---------- Sohbet (oyuncular arası) ----------
+let sohbetSon = 0, sohbetAcik = false;
+function sohbetKur() {
+  if (document.getElementById('sohbet-dugme')) return;
+  const d = document.createElement('button');
+  d.id = 'sohbet-dugme'; d.className = 'sohbet-dugme'; d.hidden = true; d.innerHTML = '💬<b id="sohbet-rozet" hidden></b>';
+  const k = document.createElement('div');
+  k.id = 'sohbet-kutu'; k.className = 'sohbet-kutu'; k.hidden = true;
+  k.innerHTML = `<div class="sohbet-ust"><b>Sohbet</b><button id="sohbet-kapat" aria-label="Kapat">✕</button></div>
+    <div id="sohbet-liste" class="sohbet-liste"></div>
+    <form id="sohbet-form" class="sohbet-form"><input id="sohbet-yazi" maxlength="200" placeholder="Mesaj yaz" autocomplete="off"><button class="btn-ana">Gönder</button></form>`;
+  document.body.append(d, k);
+  d.onclick = () => { sohbetAcik = !sohbetAcik; k.hidden = !sohbetAcik; if (sohbetAcik) { sohbetOkundu(); $('sohbet-yazi').focus(); } };
+  $('sohbet-kapat').onclick = () => { sohbetAcik = false; k.hidden = true; };
+  $('sohbet-form').onsubmit = e => { e.preventDefault(); const v = $('sohbet-yazi').value.trim(); if (!v) return; gonder({ tip: 'sohbet', metin: v }); $('sohbet-yazi').value = ''; };
+}
+function sohbetOkundu() {
+  const l = (son && son.sohbet) || [];
+  sohbetSon = l.length ? l[l.length - 1].t : sohbetSon;
+  const r = $('sohbet-rozet'); if (r) r.hidden = true;
+}
+function sohbetGuncelle(m) {
+  sohbetKur();
+  $('sohbet-dugme').hidden = false;
+  const l = m.sohbet || [];
+  const liste = $('sohbet-liste');
+  liste.innerHTML = l.length ? l.map(x => `<div class="sohbet-satir"><b>${x.no ? x.no + '. ' : ''}${kacis(x.ad)}</b> ${kacis(x.metin)}</div>`).join('') : '<div class="sohbet-bos">Henüz mesaj yok.</div>';
+  liste.scrollTop = liste.scrollHeight;
+  const yeni = l.filter(x => x.t > sohbetSon).length;
+  if (sohbetAcik) sohbetSon = l.length ? l[l.length - 1].t : 0;
+  else { const r = $('sohbet-rozet'); r.hidden = !yeni; r.textContent = yeni > 9 ? '9+' : String(yeni); if (yeni && m.olay && m.olay.tip === 'sohbet') ses.fis && ses.fis(1); }
+}
+// Ekranın sol altında: kim izliyor, kim sırada (Erman 22 Kas).
+function izleyenGuncelle(m) {
+  let e = document.getElementById('izleyen-not');
+  if (!e) { e = document.createElement('div'); e.id = 'izleyen-not'; e.className = 'izleyen-not'; document.body.appendChild(e); }
+  const iz = (m.izleyenler || []).filter(a => !(m.sira || []).includes(a)), sira = m.sira || [];
+  const parca = [];
+  if (iz.length) parca.push(`👁 ${iz.map(kacis).join(', ')} izliyor`);
+  if (sira.length) parca.push(`Sırada: ${sira.map((a, k) => `${k + 1}. ${kacis(a)}`).join(', ')}`);
+  e.innerHTML = parca.join(' · ');
+  e.hidden = !parca.length;
+}
+function sohbetGizle() {
+  const n = document.getElementById('izleyen-not'); if (n) n.hidden = true; const d = document.getElementById('sohbet-dugme'), k = document.getElementById('sohbet-kutu'); if (d) d.hidden = true; if (k) k.hidden = true; sohbetAcik = false; }
+
 function cik() {
   // Oyun sürerken çıkan molaya alınır (çipleri kalır); aynı kodla dönüp "Masaya dön" der.
   if (ws && !kapatildi) { try { ws.send(JSON.stringify(son && son.g ? { tip: 'mola', mola: true } : { tip: 'ayril' })); } catch (e) { /* kapalı */ } }
   kapatildi = true;
   try { ws && ws.close(); } catch (e) { /* zaten kapalı */ }
-  ws = null; son = null;
+  ws = null; son = null; sohbetGizle(); sohbetSon = 0;
   if (oyunda) EKRAN[oyunda].kapat();
   oyunda = null;
   yaz('novo.sonMasa', null);

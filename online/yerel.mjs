@@ -74,7 +74,12 @@ sunucu.on('upgrade', (req, soket) => {
       if (s.olay) yayinla(masa, s.olay);
     }
   });
-  const kapat = () => masa.baglar.delete(bag);
+  const kapat = () => {
+    if (!masa.baglar.delete(bag)) return;
+    if ([...masa.baglar].some(b => b.id === id)) return;
+    const s = isle(masa.oda, id, { tip: 'koptu' });
+    if (s.olay) yayinla(masa, s.olay);
+  };
   soket.on('close', kapat); soket.on('error', kapat);
 });
 sunucu.listen(PORT, () => console.log('Novo Poker yerel sunucu: ws://localhost:' + PORT));

@@ -64,5 +64,13 @@ export class Masa {
     else if (this.oda.sayac) await this.state.storage.setAlarm(this.oda.sayac.bitis + 30);
   }
 
-  async webSocketClose(ws) { try { ws.close(); } catch (e) { /* zaten kapalı */ } }
+  async webSocketClose(ws) {
+    try { ws.close(); } catch (e) { /* zaten kapalı */ }
+    // İzleyen ya da sıradaki ayrıldıysa listeden düşer (masadakinin koltuğu korunur).
+    const id = this.state.getTags(ws)[0];
+    if (!this.oda || !id) return;
+    if (this.state.getWebSockets().some(w => w !== ws && this.state.getTags(w)[0] === id)) return;
+    const s = isle(this.oda, id, { tip: 'koptu' });
+    if (s.olay) await this.yayinla(s.olay);
+  }
 }
