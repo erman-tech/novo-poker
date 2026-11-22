@@ -32,7 +32,7 @@ test('yalnız masayı açan başlatır; sıra kimdeyse o hamle yapar', () => {
   const baska = sira === 0 ? 'id1' : 'id0';
   assert.match(islem(o, baska, { tip: 'hamle', hamle: { tip: 'gec' } }).hata, /Sıra/);
   assert.equal(islem(o, 'id' + sira, { tip: 'hamle', hamle: { tip: 'gec' } }).olay.tip, 'gec');
-  assert.match(islem(o, 'yabanci', { tip: 'katil', ad: 'Z' }).hata, /izleyici/);
+  assert.match(islem(o, 'yabanci', { tip: 'katil', ad: 'Z' }).hata, /el bitince/);
 });
 
 test('görünümde deste yok, kasanın kapalı 4 kartı yok', () => {
@@ -171,4 +171,38 @@ test('Ultimate: otomatik oyuncu 5 sn içinde karar vermezse kontrol, river\'da p
   assert.equal(o.sayac.sure, SURE.otoKarar);
   let k = 0; while (o.g.el.faz !== 'bitti' && k++ < 5) sureDoldu(o, o.sayac.bitis);
   assert.equal(o.g.el.oyuncular[0].durum, 'pas');
+});
+
+test('oyun başladıktan sonra gelen: el aradaysa hemen, el sürüyorsa el bitince oturur; masa doluysa izler', () => {
+  const o = yeniOdaIle(['A']);
+  islem(o, 'id0', { tip: 'basla' });
+  const s1 = isle(o, 'f', { tip: 'katil', ad: 'Fidan' });
+  assert.equal(s1.olay.tip, 'katil');
+  assert.equal(gorunum(o, 'f').benim, 1);
+  assert.equal(o.g.oyuncular[1].fis, o.g.baslangicFis);
+  isle(o, 'id0', { tip: 'hazir' }); isle(o, 'f', { tip: 'hazir' });
+  assert.ok(o.g.el && o.g.el.faz !== 'bitti', 'el başladı');
+  const s2 = isle(o, 'g', { tip: 'katil', ad: 'Gül' });
+  assert.match(s2.hata, /el bitince/);
+  assert.equal(gorunum(o, 'g').benim, -1);
+  assert.equal(gorunum(o, 'g').bekliyor, true);
+  assert.match(isle(o, 'h', { tip: 'katil', ad: 'Hale' }).hata, /dolu/, 'üçüncü koltuk bekleyene ayrıldı');
+  for (let k = 0; k < 20 && o.g.el.faz !== 'bitti'; k++) {
+    const y = novoYasal(o.g); if (!y) break;
+    isle(o, y.oyuncu === 1 ? 'f' : 'id0', { tip: 'hamle', hamle: { tip: 'pas' } });
+  }
+  assert.equal(o.g.el.faz, 'bitti');
+  assert.equal(gorunum(o, 'g').benim, 2, 'el bitince oturdu');
+  assert.equal(o.g.oyuncular.length, 3);
+  assert.equal(o.g.el.oyuncular[2].katildi, false);
+  assert.ok(gizle(o.g, 2));
+});
+
+test('Ultimate: oyun sürerken gelen el aradayken oturur', () => {
+  const o = yeniOda('U');
+  islem(o, 'id0', { tip: 'katil', ad: 'A', oyun: 'ultimate' });
+  islem(o, 'id0', { tip: 'basla' });
+  assert.equal(isle(o, 'f', { tip: 'katil', ad: 'Fidan' }).olay.tip, 'katil');
+  assert.equal(o.g.oyuncular[1].trips, false);
+  assert.equal(o.g.oyuncular[1].fis, o.g.baslangicFis);
 });
