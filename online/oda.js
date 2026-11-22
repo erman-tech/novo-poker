@@ -28,7 +28,7 @@ export const AD_AZAMI = 16;
 // karar süresi başlamasın diye o süre eklenir.
 export const SURE = {
   hazir: 5000,          // biri "hazırım" deyince el bu kadar sonra dağıtılır
-  karar: 15000,         // kart çekme, oyna/pas, sigorta, kasaya kart çektirme
+  karar: 5000,          // kart çekme, oyna/pas, sigorta, kasaya kart çektirme (Erman: 15 sn çok uzun)
   dagitimPayi: 22000,
   dagitimPayiUltimate: 9000, // Ultimate dağıtımı (2 kart + kasa) daha kısa
   sokakPayi: 3000,           // flop / river açılışı   // dağıtım + express animasyonu (telefonda ölçüldü ~20 sn)

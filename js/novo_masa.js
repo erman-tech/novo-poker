@@ -338,7 +338,7 @@ function panelCiz0() {
           <button class="btn-ikincil ${otom ? 'oto-acik' : ''}" id="n-oto" ${ben < 0 || (yetmez && !otom) ? 'disabled' : ''}>Otomatik: ${otom ? 'Açık' : 'Kapalı'}</button>
           ${hazirim ? '<button class="btn-tehlike" id="n-iptal">İptal</button>' : `<button class="btn-ana" id="n-hazir" ${ben < 0 || yetmez ? 'disabled' : ''}>${el ? 'Sonraki ele gir' : 'İlk ele gir'}</button>`}
         </div>
-        <div class="hata">${kacis(hata)}${hata ? ' ' : ''}${yetmez ? (online.sahipMi ? 'Paran bitti: kendine para yükleyebilirsin.' : 'Paran bitti; masayı açan para yüklerse oyuna dönebilirsin.') : hazirim ? (otom ? 'Otomatik oynuyorsun: parası yettikçe her ele girersin. Karar vermezsen 5 sn sonra kart çekmeden geçilir, son kararda pas.' : 'Bu ele giriyorsun; vazgeçmek için İptal.') : ben >= 0 ? 'Basmazsan bu eli dışarıda geçirirsin.' : ''}</div></div>`;
+        <div class="hata">${kacis(hata)}${hata ? ' ' : ''}${yetmez ? (online.sahipMi ? 'Paran bitti: kendine para yükleyebilirsin.' : 'Paran bitti; masayı açan para yüklerse oyuna dönebilirsin.') : hazirim ? (otom ? 'Otomatik oynuyorsun: parası yettikçe her ele girersin. Her kararın süresi 5 sn; dolunca kart çekmeden geçilir, son kararda pas.' : 'Bu ele giriyorsun; vazgeçmek için İptal.') : ben >= 0 ? 'Basmazsan bu eli dışarıda geçirirsin.' : ''}</div></div>`;
       if ($('n-yukle')) $('n-yukle').onclick = yukleAc;
       if ($('n-hazir')) $('n-hazir').onclick = () => { ses.acil(); konus.kilidiAc(); online.gonder({ tip: 'hazir' }); };
       if ($('n-iptal')) $('n-iptal').onclick = () => online.gonder({ tip: 'hazir', iptal: true });

@@ -174,7 +174,7 @@ function panelCiz() {
         <button class="btn-ikincil ${otom ? 'oto-acik' : ''}" id="u-oto" ${ben < 0 || (yetmez && !otom) ? 'disabled' : ''}>Otomatik: ${otom ? 'Açık' : 'Kapalı'}</button>
         ${hazirim ? '<button class="btn-tehlike" id="u-iptal">İptal</button>' : `<button class="btn-ana" id="u-hazir" ${ben < 0 || yetmez ? 'disabled' : ''}>${el ? 'Sonraki ele gir' : 'İlk ele gir'}</button>`}
       </div>
-      <div class="hata">${kacis(hata)}${hata ? ' ' : ''}${yetmez ? (api.sahipMi ? 'Paran yetmiyor: kendine para yükleyebilirsin.' : 'Paran yetmiyor; masayı açan para yüklerse dönebilirsin.') : hazirim ? (otom ? 'Otomatik oynuyorsun: parası yettikçe her ele girersin. Karar vermezsen 5 sn sonra kontrol, river\'da pas.' : 'Bu ele giriyorsun; vazgeçmek için İptal.') : ben >= 0 ? `Giriş: ante ${para(g.ante)} + blind ${para(g.ante)}${o && o.trips ? ` + trips ${para(g.ante)}` : ''}. Basmazsan bu eli dışarıda geçirirsin.` : ''}</div></div>`;
+      <div class="hata">${kacis(hata)}${hata ? ' ' : ''}${yetmez ? (api.sahipMi ? 'Paran yetmiyor: kendine para yükleyebilirsin.' : 'Paran yetmiyor; masayı açan para yüklerse dönebilirsin.') : hazirim ? (otom ? 'Otomatik oynuyorsun: parası yettikçe her ele girersin. Her kararın süresi 5 sn; dolunca kontrol, river\'da pas.' : 'Bu ele giriyorsun; vazgeçmek için İptal.') : ben >= 0 ? `Giriş: ante ${para(g.ante)} + blind ${para(g.ante)}${o && o.trips ? ` + trips ${para(g.ante)}` : ''}. Basmazsan bu eli dışarıda geçirirsin.` : ''}</div></div>`;
     pn.innerHTML = html;
     if ($('u-yukle')) $('u-yukle').onclick = yukleAc;
     if ($('u-trips')) $('u-trips').onclick = () => api.gonder({ tip: 'trips', acik: !o.trips });
@@ -274,7 +274,7 @@ function kurallarAc() {
     <div class="kural-tablolar">${tablo('BLIND (kazanınca)', blind)}${tablo('TRIPS (isteğe bağlı)', trips)}</div>
     <div class="kural-liste">
     ${s('Nasıl oynanır?', 'Ante ve ante kadar blind koyarsın; istersen trips de. Herkese 2 kart, kasaya 2 kapalı kart gelir, ortada 5 kart açılır. Kasaya karşı oynarsın; en iyi 5 kart kazanır.')}
-    ${s('Kararlar', 'Preflop: kontrol ya da 4x / 3x ante bahis. Flop (3 kart): kontrol ya da 2x. River (5 kart): 1x bahis ya da pas. Bahis yaptıysan o elde bir daha karar vermezsin. Herkes aynı anda karar verir, süre 15 saniye; süre dolunca kontrol (river’da pas) yapılır.')}
+    ${s('Kararlar', 'Preflop: kontrol ya da 4x / 3x ante bahis. Flop (3 kart): kontrol ya da 2x. River (5 kart): 1x bahis ya da pas. Bahis yaptıysan o elde bir daha karar vermezsin. Herkes aynı anda karar verir, süre 5 saniye; süre dolunca kontrol (river’da pas) yapılır.')}
     ${s('Kasa kalifiye', 'Kasa en az bir çiftle kalifiye olur. Olmazsa ante iade edilir; blind ve play yine kasayla karşılaştırılır.')}
     ${s('Ödemeler', 'Kazanırsan play 1:1, ante 1:1 (kasa kalifiyeyse), blind tabloya göre (kentten aşağısı iade). Kaybedersen play ve blind gider, kasa kalifiyeyse ante de. Beraberlikte hepsi iade. Pas geçersen ante ve blind gider.')}
     ${s('Trips', 'İsteğe bağlı yan bahis, ante kadar. Kasadan bağımsız olarak elin üçlü ve üstüyse tabloya göre öder. Eller arasında Trips düğmesiyle açılır.')}
