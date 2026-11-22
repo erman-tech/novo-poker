@@ -30,7 +30,7 @@ export function ultimateOnlineDurum(m) {
 
 async function isle(m) {
   if (!api) return;
-  Object.assign(api, { benim: m.benim, sahipMi: m.sahipMi, koltuklar: m.koltuklar, hazir: m.hazir || {}, oto: m.oto || {}, kod: m.kod,
+  Object.assign(api, { benim: m.benim, sahipMi: m.sahipMi, koltuklar: m.koltuklar, hazir: m.hazir || {}, oto: m.oto || {}, kod: m.kod, molaIstek: !!m.molaIstek,
     sayac: m.sayac ? { ...m.sayac, bitis: Date.now() + m.sayac.kalan } : null });
   if (!m.g) return;
   const once = g, yeni = m.g, t = m.olay && m.olay.tip;
@@ -167,17 +167,19 @@ function panelCiz() {
           <span class="toplam ${p.net >= 0 ? 'art' : 'eks'}">= ${tut(p.net) || '$0'}</span></div>` : '').join('')}</div>`;
     }
     html += `<div class="bekleme">${ozet}
-      <div class="mola-satir">${g.oyuncular.map((x, i) => `<span class="mola-dugme ${hz[i] ? 'hazir' : ''}">${kacis(x.ad)} · ${hz[i] ? (oto[i] ? 'otomatik' : 'hazır') : x.fis < gereken(g, i) ? 'parası bitti' : 'bekleniyor'}</span>`).join('')}</div>
+      <div class="mola-satir">${g.oyuncular.map((x, i) => `<span class="mola-dugme ${hz[i] ? 'hazir' : ''}">${kacis(x.ad)} · ${x.mola ? 'oyunda değil' : hz[i] ? (oto[i] ? 'otomatik' : 'hazır') : x.fis < gereken(g, i) ? 'parası bitti' : 'bekleniyor'}</span>`).join('')}</div>
       <div class="satir" style="width:min(640px,100%)">
         ${api.sahipMi ? '<button class="btn-ikincil" id="u-yukle">Para yükle</button>' : ''}
+        ${o ? `<button class="btn-ikincil ${o.mola || api.molaIstek ? 'oto-acik' : ''}" id="u-mola">${o.mola || api.molaIstek ? 'Oyuna gir' : 'Oyundan çık'}</button>` : ''}
         ${o ? `<button class="btn-ikincil" id="u-trips">Trips: ${o.trips ? 'Açık' : 'Kapalı'}</button>` : ''}
         <button class="btn-ikincil ${otom ? 'oto-acik' : ''}" id="u-oto" ${ben < 0 || (yetmez && !otom) ? 'disabled' : ''}>Otomatik: ${otom ? 'Açık' : 'Kapalı'}</button>
         ${hazirim ? '<button class="btn-tehlike" id="u-iptal">İptal</button>' : `<button class="btn-ana" id="u-hazir" ${ben < 0 || yetmez ? 'disabled' : ''}>${el ? 'Sonraki ele gir' : 'İlk ele gir'}</button>`}
       </div>
-      <div class="hata">${kacis(hata)}${hata ? ' ' : ''}${yetmez ? (api.sahipMi ? 'Paran yetmiyor: kendine para yükleyebilirsin.' : 'Paran yetmiyor; masayı açan para yüklerse dönebilirsin.') : hazirim ? (otom ? 'Otomatik oynuyorsun: parası yettikçe her ele girersin. Her kararın süresi 10 sn; dolunca kontrol, river\'da pas.' : 'Bu ele giriyorsun; vazgeçmek için İptal.') : ben >= 0 ? `Giriş: ante ${para(g.ante)} + blind ${para(g.ante)}${o && o.trips ? ` + trips ${para(g.ante)}` : ''}. Basmazsan bu eli dışarıda geçirirsin.` : ''}</div></div>`;
+      <div class="hata">${kacis(hata)}${hata ? ' ' : ''}${yetmez ? (api.sahipMi ? 'Paran yetmiyor: kendine para yükleyebilirsin.' : 'Paran yetmiyor; masayı açan para yüklerse dönebilirsin.') : hazirim ? (otom ? 'Otomatik oynuyorsun: parası yettikçe her ele girersin. Her kararın süresi 10 sn; dolunca kontrol, river\'da pas.' : 'Bu ele giriyorsun; vazgeçmek için İptal.') : ben >= 0 ? `Giriş: ante ${para(g.ante)} + blind ${para(g.ante)}${o && o.trips ? ` + trips ${para(g.ante)}` : ''}. ${o && (o.mola || api.molaIstek) ? ' Oyunda değilsin: sana kart dağıtılmaz; dönmek için Oyuna gir.' : ' Basmasan da ele girersin; bu el oynamayacaksan Oyundan çık.'}` : ''}</div></div>`;
     pn.innerHTML = html;
     if ($('u-yukle')) $('u-yukle').onclick = yukleAc;
     if ($('u-trips')) $('u-trips').onclick = () => api.gonder({ tip: 'trips', acik: !o.trips });
+    if ($('u-mola')) $('u-mola').onclick = () => api.gonder({ tip: 'mola', mola: !(o.mola || api.molaIstek) });
     if ($('u-hazir')) $('u-hazir').onclick = () => { ses.acil(); api.gonder({ tip: 'hazir' }); };
     if ($('u-iptal')) $('u-iptal').onclick = () => api.gonder({ tip: 'hazir', iptal: true });
     $('u-oto').onclick = () => { ses.acil(); api.gonder({ tip: 'oto', acik: !otom }); };

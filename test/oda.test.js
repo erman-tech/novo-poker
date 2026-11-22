@@ -218,7 +218,7 @@ test('yan express: oyuncu kendi seçimini eller arasında açar, dağıtımda ba
   isle(o, 'id0', { tip: 'hazir' }); isle(o, 'id1', { tip: 'hazir' });
   const p = o.g.el.oyuncular[0];
   assert.equal(p.yanBahis, 2 * o.g.ante);
-  assert.equal(o.g.oyuncular[0].fis, once - 2 * o.g.ante - p.yanBahis + p.yanOdeme);
+  assert.equal(o.g.oyuncular[0].fis, once - 2 * o.g.ante - p.yanBahis + p.yanOdeme + p.bonusOdeme, 'kendi express ödemesi de rastgele gelebilir');
   assert.match(isle(o, 'id0', { tip: 'yan', kasa: false }).hata, /El bitince/);
 });
 
@@ -260,4 +260,14 @@ test('baştan başlat: yalnız masayı açan; el sürerken istenirse el bitince 
   for (let k = 0; k < 20 && o.g.el; k++) { const y = novoYasal(o.g); if (!y) break; isle(o, 'id' + y.oyuncu, { tip: 'hamle', hamle: { tip: 'pas' } }); }
   assert.equal(o.g.el, null, 'el bitince masa baştan başladı');
   assert.deepEqual(o.g.oyuncular.map(x => x.fis), [o.g.baslangicFis, o.g.baslangicFis]);
+});
+
+test('Ultimate: oyundan çıkan dağıtılmaz, ele gir diyen döner', () => {
+  const o = yeniOda('UM');
+  isle(o, 'a', { tip: 'katil', ad: 'A', oyun: 'ultimate' }); isle(o, 'b', { tip: 'katil', ad: 'B' });
+  isle(o, 'a', { tip: 'basla' });
+  isle(o, 'b', { tip: 'mola', mola: true });
+  assert.equal(o.g.oyuncular[1].mola, true);
+  assert.equal(isle(o, 'a', { tip: 'hazir' }).olay.tip, 'dagit', 'moladaki beklenmez');
+  assert.equal(o.g.el.oyuncular[1].katildi, false);
 });
