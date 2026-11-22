@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Novo Poker">
+<meta name="theme-color" content="#062316">
+<title>Novo Poker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="ikon-180.png">
+<link rel="stylesheet" href="css/stil.css">
+</head>
+<body>
+
+<!-- Ana menü -->
+<section id="e-giris" class="ekran giris ana-ekran etkin">
+  <svg class="novo-logo" viewBox="0 0 360 230" role="img" aria-label="Novo Poker">
+    <defs>
+      <linearGradient id="lg-altin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1b8"/><stop offset=".5" stop-color="#e8c25a"/><stop offset="1" stop-color="#a87a1c"/></linearGradient>
+      <linearGradient id="lg-kagit" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ece6d6"/></linearGradient>
+      <filter id="lg-golge" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000" flood-opacity=".45"/></filter>
+    </defs>
+    <g filter="url(#lg-golge)">
+      <g transform="rotate(-20 180 168)"><rect x="128" y="14" width="104" height="146" rx="11" fill="url(#lg-kagit)" stroke="#c9bfa6"/><text x="140" y="44" font-family="Georgia,serif" font-weight="700" font-size="26" fill="#111">K</text><text x="141" y="66" font-size="20" fill="#111">♠</text><text x="180" y="112" text-anchor="middle" font-size="52" fill="#111">♠</text></g>
+      <g transform="rotate(20 180 168)"><rect x="128" y="14" width="104" height="146" rx="11" fill="url(#lg-kagit)" stroke="#c9bfa6"/><text x="140" y="44" font-family="Georgia,serif" font-weight="700" font-size="26" fill="#c8102e">Q</text><text x="141" y="66" font-size="20" fill="#c8102e">♦</text><text x="180" y="112" text-anchor="middle" font-size="52" fill="#c8102e">♦</text></g>
+      <g><rect x="128" y="8" width="104" height="146" rx="11" fill="url(#lg-kagit)" stroke="#c9bfa6"/><text x="140" y="38" font-family="Georgia,serif" font-weight="700" font-size="26" fill="#c8102e">A</text><text x="141" y="60" font-size="20" fill="#c8102e">♥</text><text x="180" y="108" text-anchor="middle" font-size="62" fill="#c8102e">♥</text></g>
+    </g>
+    <g transform="translate(266 128)" filter="url(#lg-golge)"><circle r="26" fill="#c8102e"/><circle r="26" fill="none" stroke="#fff" stroke-width="7" stroke-dasharray="7 6.6"/><circle r="17" fill="#fff"/><text y="6" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="16" fill="#c8102e">N</text></g>
+    <text x="180" y="196" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-weight="900" font-size="60" letter-spacing="6" fill="url(#lg-altin)" stroke="#4a3100" stroke-width="1.4">NOVO</text>
+    <text x="180" y="224" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-weight="700" font-size="17" letter-spacing="13" fill="#f3e2c4">POKER</text>
+  </svg>
+  <div class="ana-menu">
+    <button id="a-online" class="ana-kart birincil">Online masa aç<small>Arkadaşlarını masa koduyla davet et</small></button>
+    <button id="a-katil" class="ana-kart">Masaya katıl<small>Sana gelen masa koduyla gir</small></button>
+    <button id="a-don" class="ana-kart" hidden>Online masaya dön<small id="a-don-kod"></small></button>
+    <button id="a-ultimate" class="ana-kart beta"><span class="rozet-beta">BETA</span>Ultimate Texas Hold'em<small>Kasaya karşı Texas</small></button>
+    <a id="a-ucak" class="ana-kart ikincil" href="https://erman-tech.github.io/poker-masasi/">İnternetsiz sürüm<small>Uçak modu: iPad masa, telefonlar oyuncu (ayrı adres)</small></a>
+  </div>
+  <div class="kucuk-not" id="g-not"></div>
+  <div class="g-surum" id="g-surum"></div>
+</section>
+
+<!-- Uçak modu (internetsiz) -->
+<section id="e-ucak" class="ekran giris">
+  <h1>Uçak modu</h1>
+  <p>İnternetsiz oynanır. iPad ortada masa olur; Texas'ta herkes kendi iki kartını kendi telefonunda görür.</p>
+  <div class="secim">
+    <button id="g-masa">Masa kur<small>Ortadaki iPad: Texas Hold'em ya da Novo Poker</small></button>
+    <button id="g-oyuncu">Oyuncuyum<small>Kendi telefonun: yalnız senin iki kartın</small></button>
+    <button id="g-devam" class="btn-ikincil" hidden>Kaldığın yerden devam et</button>
+    <button id="u-geri" class="btn-ikincil">Ana menü</button>
+  </div>
+</section>
+
+<!-- Online: masa aç / katıl -->
+<section id="e-online" class="ekran giris">
+  <div class="form online-form">
+    <h2 id="on-baslik">Online masa aç</h2>
+    <label>Adın
+      <input id="on-ad" maxlength="16" autocomplete="nickname" placeholder="Boş bırakırsan Guest101 gibi bir ad verilir">
+    </label>
+    <label id="on-kod-alan" hidden>Masa kodu
+      <input id="on-kod" maxlength="8" autocapitalize="characters" autocomplete="off" placeholder="Örn. K7M2Q" style="text-transform:uppercase;letter-spacing:4px;font-family:Menlo,monospace">
+    </label>
+    <div class="hata" id="on-hata"></div>
+    <div class="satir">
+      <button class="btn-ikincil" id="on-geri">Geri</button>
+      <button class="btn-ana" id="on-tamam">Masayı aç</button>
+    </div>
+  </div>
+</section>
+
+<!-- Online: lobi -->
+<section id="e-lobi" class="ekran giris">
+  <div class="form lobi">
+    <div class="lobi-ust"><span>Masa kodu</span><div class="kod-buyuk" id="l-kod">–</div>
+      <button class="btn-ikincil" id="l-davet">Davet bağlantısını paylaş</button></div>
+    <div class="lobi-baslik">Oyuncular <span id="l-sayi"></span></div>
+    <div id="l-oyuncular" class="lobi-oyuncular"></div>
+    <div class="satir" id="l-ad-satir"><input id="l-ad" maxlength="16" placeholder="Adını değiştir"><button class="btn-ikincil" id="l-ad-kaydet">Kaydet</button></div>
+    <div id="l-ayar" class="lobi-ayar">
+      <label>Başlangıç parası<input value="$1.000 (herkes)" disabled></label>
+      <label>Ante<select id="l-ante"><option>5</option><option>10</option><option>25</option><option>50</option><option>100</option></select></label>
+    </div>
+    <div class="ne" id="l-not"></div>
+    <div class="hata" id="l-hata"></div>
+    <div class="satir">
+      <button class="btn-ikincil" id="l-cik">Masadan çık</button>
+      <button class="btn-ana" id="l-basla">Oyunu başlat</button>
+    </div>
+  </div>
+</section>
+
+<!-- Masa kurulumu -->
+<section id="e-kurulum" class="ekran">
+  <div class="form">
+    <h2>Masayı kur</h2>
+    <div class="tur-sec" id="k-tur" data-tur="texas">
+      <button data-tur="texas" class="secik">Texas Hold'em<small>Oyuncular birbirine karşı</small></button>
+      <button data-tur="novo">Novo Poker<small>Kasaya karşı · 1-3 oyuncu</small></button>
+    </div>
+    <div class="oyuncu-listesi" id="k-oyuncular"></div>
+    <button class="btn-ikincil" id="k-ekle">+ Oyuncu ekle</button>
+    <label>Herkesin başlangıç parası ($)
+      <input id="k-fis" type="number" inputmode="numeric" value="1000" min="100" step="100">
+    </label>
+    <label class="sadece-novo">Ante (express ve kart çekme de bu kadar, oyna 2 katı)
+      <select id="k-ante"><option>5</option><option>10</option><option selected>25</option><option>50</option><option>100</option></select>
+    </label>
+    <label class="sadece-texas">Körler (10/20 ile başlar) kaç elde bir yükselsin?
+      <select id="k-kor">
+        <option value="0">Yükselmesin</option>
+        <option value="8">8 elde bir</option>
+        <option value="10" selected>10 elde bir</option>
+        <option value="15">15 elde bir</option>
+        <option value="20">20 elde bir</option>
+      </select>
+    </label>
+    <label class="sadece-texas">Bu cihaz kimin? (Telefonu masa yapıyorsanız sahibi kendi kartlarına buradan bakar)
+      <select id="k-sahip"></select>
+    </label>
+    <div class="hata" id="k-hata"></div>
+    <div class="satir">
+      <button class="btn-ikincil" id="k-geri">Geri</button>
+      <button class="btn-ana" id="k-basla">Masayı aç</button>
+    </div>
+  </div>
+</section>
+
+<!-- Masa (iPad) -->
+<section id="e-masa" class="ekran masa-ekran">
+  <div class="ust-cubuk">
+    <span class="bilgi">El <b id="m-elno">–</b></span>
+    <span class="bilgi">Kontrol <b id="m-kontrol">–</b></span>
+    <span class="bilgi">Körler <b id="m-korlar">–</b></span>
+    <span class="bilgi" id="m-korbilgi"></span>
+    <span class="bosluk"></span>
+    <button id="m-kod">Masa kodu</button>
+    <button id="m-geri">↶ Geri al</button>
+    <button id="m-ses">🔊</button>
+    <button id="m-menu">☰</button>
+  </div>
+  <div class="masa-alan" id="m-alan">
+    <div class="kece"></div>
+    <div class="orta-alan">
+      <div class="el-rozet" id="m-elrozet"></div>
+      <div class="ortak" id="m-ortak"></div>
+      <div class="pot-satir"><div class="pot-fis" id="m-potfis"></div><div class="pot" id="m-pot">Pot 0</div></div>
+    </div>
+  </div>
+  <div class="eylem-paneli" id="m-panel"></div>
+</section>
+
+<!-- Novo masası (iPad) -->
+<section id="e-novo" class="ekran novo-ekran">
+  <div class="ust-cubuk">
+    <span class="bilgi">Novo · El <b id="n-elno">–</b></span>
+    <span class="bilgi">Ante <b id="n-ante">–</b></span>
+    <span class="bilgi">Kasa <b id="n-kasa">$0</b> <span id="n-kasatop" style="color:var(--soluk)"></span></span>
+    <span class="bosluk"></span>
+    <button id="n-geri">↶ Geri al</button>
+    <button id="n-ses">🔊</button>
+    <button id="n-menu">☰</button>
+  </div>
+  <div class="masa-alan" id="n-alan">
+    <div class="kece novo-kece"></div>
+    <div class="n-yazi" id="n-yazi">KASAYA KARŞI · KASA AS-PAPAZ VE ÜSTÜYLE OYUNA GİRER</div>
+    <div class="n-krupiye-alan">
+      <div class="krupiye" id="n-krupiye-kadin"></div>
+      <div class="n-kasa-etiket">KASA</div>
+      <div class="n-kasa-satir"><div class="n-kasa-kutu" id="n-kasa-kutu"><i style="--renk:#c9a06b;--kenar:#f3e2c4"></i><i style="--renk:#c9a06b;--kenar:#f3e2c4"></i><i style="--renk:#1c1d22;--kenar:#d9b98a"></i><i style="--renk:#1c1d22;--kenar:#d9b98a"></i><i style="--renk:#2a9a55;--kenar:#a6e3ae"></i><i style="--renk:#2a9a55;--kenar:#a6e3ae"></i><i style="--renk:#cf3527;--kenar:#f2b33b"></i><i style="--renk:#eef0f1;--kenar:#86c8e3"></i></div><div class="ortak" id="n-krupiye"></div><div class="n-yakilan" id="n-yakilan"></div></div>
+      <div class="n-krupiye-ad" id="n-krupiye-ad"></div>
+    </div>
+  </div>
+  <div class="eylem-paneli" id="n-panel"></div>
+  <div class="cevir-uyari"><div class="cevir-ikon">📱</div><b>Telefonu yan çevir</b><span>Novo Poker telefonda yatay oynanır.</span></div>
+</section>
+
+<!-- Oyuncu kurulumu -->
+<section id="e-oyuncu-kur" class="ekran">
+  <div class="form">
+    <h2>Masaya otur</h2>
+    <label>Masa kodu (iPad'in üstünde yazıyor)
+      <input id="o-kod" autocomplete="off" autocapitalize="characters" maxlength="10" placeholder="ÖRN. K7Q2M9" style="font-size:26px;letter-spacing:4px;text-transform:uppercase">
+    </label>
+    <label>Koltuk numaran (iPad'de adının yanında)
+      <select id="o-koltuk"></select>
+    </label>
+    <label>Adın
+      <input id="o-ad" autocomplete="off" maxlength="16">
+    </label>
+    <div class="hata" id="o-hata"></div>
+    <div class="satir">
+      <button class="btn-ikincil" id="o-geri">Geri</button>
+      <button class="btn-ana" id="o-basla">Otur</button>
+    </div>
+  </div>
+</section>
+
+<!-- Oyuncu (telefon) -->
+<section id="e-oyuncu" class="ekran oyuncu-ekran">
+  <div class="oy-ust">
+    <span class="ad" id="oy-ad"></span>
+    <span class="bosluk"></span>
+    <button id="oy-ses">🔊</button>
+    <button id="oy-ayar">Ayar</button>
+  </div>
+  <div class="el-bilgi">
+    <div class="no"><span id="oy-elno">–</span>. EL</div>
+    <div class="kontrol">Kontrol <b id="oy-kontrol">–</b> · iPad'dekiyle aynı olmalı</div>
+  </div>
+  <div class="kart-alani" id="oy-kartlar"></div>
+  <div class="ipucu" id="oy-ipucu"></div>
+  <div class="oy-alt">
+    <div class="satir">
+      <button class="btn-ikincil" id="oy-onceki">◀ Önceki el</button>
+      <button class="btn-tehlike" id="oy-at">Kartları at</button>
+    </div>
+    <button class="btn-ana" id="oy-sonraki">Kartlarımı al ▶</button>
+  </div>
+</section>
+
+<div class="duyuru" id="duyuru"></div>
+<div class="perde" id="perde"><div class="kutu" id="perde-kutu"></div></div>
+
+<script type="module" src="js/uygulama.js"></script>
+</body>
+</html>

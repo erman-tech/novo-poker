@@ -1,0 +1,11 @@
+name = "novo-poker"
+main = "worker.js"
+compatibility_date = "2026-11-01"
+
+[[durable_objects.bindings]]
+name = "MASA"
+class_name = "Masa"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Masa"]
