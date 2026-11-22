@@ -100,7 +100,8 @@ function lobiCiz(m) {
 }
 
 function cik() {
-  if (ws && !kapatildi) { try { if (son && !son.g) ws.send(JSON.stringify({ tip: 'ayril' })); } catch (e) { /* kapalı */ } }
+  // Oyun sürerken çıkan molaya alınır (çipleri kalır); aynı kodla dönüp "Masaya dön" der.
+  if (ws && !kapatildi) { try { ws.send(JSON.stringify(son && son.g ? { tip: 'mola', mola: true } : { tip: 'ayril' })); } catch (e) { /* kapalı */ } }
   kapatildi = true;
   try { ws && ws.close(); } catch (e) { /* zaten kapalı */ }
   ws = null; son = null;

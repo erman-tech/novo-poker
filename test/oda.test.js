@@ -53,7 +53,7 @@ test('kasa açılınca kartlar görünür', () => {
   assert.equal(gizle(g).el.krupiye[0].d, 2);
 });
 
-test('geri sayım: biri hazır deyince 5 sn sonra hazır olanlarla dağıtılır, basmayan o eli dışarıda geçirir', () => {
+test('geri sayım: biri hazır deyince 5 sn sonra dağıtılır; basmayan da ele girer (molada değilse)', () => {
   const o = yeniOda('T');
   isle(o, 'a', { tip: 'katil', ad: 'A' }, 0); isle(o, 'b', { tip: 'katil', ad: 'B' }, 0);
   isle(o, 'a', { tip: 'basla' }, 0);
@@ -62,7 +62,7 @@ test('geri sayım: biri hazır deyince 5 sn sonra hazır olanlarla dağıtılır
   assert.equal(o.sayac.bitis, 1000 + SURE.hazir);
   assert.deepEqual(sureDoldu(o, 3000), {}, 'süre dolmadan bir şey olmaz');
   assert.equal(sureDoldu(o, 1000 + SURE.hazir).olay.tip, 'dagit');
-  assert.equal(o.g.el.oyuncular[0].katildi, false, 'basmayan A bu elde yok');
+  assert.equal(o.g.el.oyuncular[0].katildi, true, 'basmayan A da ele girdi (Erman 22 Kas)');
   assert.equal(o.g.el.oyuncular[1].katildi, true);
   // Karar süresi dağıtım animasyonu payıyla başlar
   assert.equal(o.sayac.tip, 'cekme');
@@ -137,7 +137,7 @@ test('otomatik oyna: her el kendiliğinden hazır, 5 sn içinde iptal edilebilir
   isle(o, 'b', { tip: 'hazir', iptal: true }, 100);
   assert.deepEqual(o.hazir, { 0: true }); assert.equal(o.oto[1], undefined);
   sureDoldu(o, o.sayac.bitis);
-  assert.ok(o.g.el && o.g.el.oyuncular[0].katildi && !o.g.el.oyuncular[1].katildi, 'yalnız A ele girdi');
+  assert.ok(o.g.el && o.g.el.oyuncular[0].katildi && o.g.el.oyuncular[1].katildi, 'iptal eden B de ele girdi (oynamak istemeyen oyundan çıkar)');
   // A otomatik: karar süresi 5 sn; karar vermezse varsayılan (çekmez, sonra pas)
   assert.equal(o.sayac.sure, SURE.otoKarar);
   assert.equal(gorunum(o, 'a').sayac.toplam, SURE.otoKarar);
@@ -205,4 +205,59 @@ test('Ultimate: oyun sürerken gelen el aradayken oturur', () => {
   assert.equal(isle(o, 'f', { tip: 'katil', ad: 'Fidan' }).olay.tip, 'katil');
   assert.equal(o.g.oyuncular[1].trips, false);
   assert.equal(o.g.oyuncular[1].fis, o.g.baslangicFis);
+});
+
+test('karar süresi 10 sn', () => { assert.equal(SURE.karar, 10000); assert.equal(SURE.otoKarar, 10000); });
+
+test('yan express: oyuncu kendi seçimini eller arasında açar, dağıtımda bahis alınır', () => {
+  const o = yeniOdaIle(['A', 'B']);
+  islem(o, 'id0', { tip: 'basla' });
+  assert.equal(isle(o, 'id0', { tip: 'yan', kasa: true, komsu: true }).olay.tip, 'yan');
+  assert.deepEqual(o.g.oyuncular[0].yan, { kasa: true, komsu: true });
+  const once = o.g.oyuncular[0].fis;
+  isle(o, 'id0', { tip: 'hazir' }); isle(o, 'id1', { tip: 'hazir' });
+  const p = o.g.el.oyuncular[0];
+  assert.equal(p.yanBahis, 2 * o.g.ante);
+  assert.equal(o.g.oyuncular[0].fis, once - 2 * o.g.ante - p.yanBahis + p.yanOdeme);
+  assert.match(isle(o, 'id0', { tip: 'yan', kasa: false }).hata, /El bitince/);
+});
+
+test('mola: el sürerken istenirse el bitince uygulanır; çıkan molaya alınır, ele gir diyen döner', () => {
+  const o = yeniOdaIle(['A', 'B']);
+  islem(o, 'id0', { tip: 'basla' });
+  isle(o, 'id0', { tip: 'hazir' }); isle(o, 'id1', { tip: 'hazir' });
+  assert.equal(isle(o, 'id1', { tip: 'mola', mola: true }).olay.bekliyor, true);
+  assert.equal(gorunum(o, 'id1').molaIstek, true);
+  for (let k = 0; k < 20 && o.g.el.faz !== 'bitti'; k++) { const y = novoYasal(o.g); if (!y) break; isle(o, 'id' + y.oyuncu, { tip: 'hamle', hamle: { tip: 'pas' } }); }
+  assert.equal(o.g.el.faz, 'bitti');
+  assert.equal(o.g.oyuncular[1].mola, true, 'el bitince molaya geçti');
+  assert.equal(isle(o, 'id0', { tip: 'hazir' }).olay.tip, 'dagit', 'moladaki beklenmez');
+  for (let k = 0; k < 20 && o.g.el.faz !== 'bitti'; k++) { const y = novoYasal(o.g); if (!y) break; isle(o, 'id' + y.oyuncu, { tip: 'hamle', hamle: { tip: 'pas' } }); }
+  isle(o, 'id1', { tip: 'hazir' });
+  assert.equal(o.g.oyuncular[1].mola, false, 'ele gir diyen masaya döndü');
+});
+
+test('"çekmiyorum, oyna": karar sırası gelince tekrar sorulmadan oynar', () => {
+  const o = yeniOdaIle(['A', 'B']);
+  islem(o, 'id0', { tip: 'basla' });
+  isle(o, 'id0', { tip: 'hazir' }); isle(o, 'id1', { tip: 'hazir' });
+  const y0 = novoYasal(o.g);
+  isle(o, 'id' + y0.oyuncu, { tip: 'hamle', hamle: { tip: 'gec', oyna: true } });
+  const ilk = y0.oyuncu, diger = 1 - ilk;
+  isle(o, 'id' + diger, { tip: 'hamle', hamle: { tip: 'gec' } });
+  // karar aşaması: ilk oyuncu otomatik oynadı (sigorta sorulmuyorsa)
+  const p = o.g.el.oyuncular[ilk];
+  if (!p.sigortaSor) assert.equal(p.durum, 'oynadi');
+  assert.equal(p.bahis, 2 * o.g.ante);
+});
+
+test('baştan başlat: yalnız masayı açan; el sürerken istenirse el bitince başlar', () => {
+  const o = yeniOdaIle(['A', 'B']);
+  islem(o, 'id0', { tip: 'basla' });
+  isle(o, 'id0', { tip: 'hazir' }); isle(o, 'id1', { tip: 'hazir' });
+  assert.match(isle(o, 'id1', { tip: 'yeniden' }).hata, /açan/);
+  assert.match(isle(o, 'id0', { tip: 'yeniden' }).hata, /el bitince/);
+  for (let k = 0; k < 20 && o.g.el; k++) { const y = novoYasal(o.g); if (!y) break; isle(o, 'id' + y.oyuncu, { tip: 'hamle', hamle: { tip: 'pas' } }); }
+  assert.equal(o.g.el, null, 'el bitince masa baştan başladı');
+  assert.deepEqual(o.g.oyuncular.map(x => x.fis), [o.g.baslangicFis, o.g.baslangicFis]);
 });

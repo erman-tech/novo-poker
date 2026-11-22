@@ -3,7 +3,7 @@
 // aynı dosyayı kullanır. Deste ve kasanın kapalı kartları yalnız burada durur; istemcilere
 // giden görünümde yoktur, yani kimse telefonundan kasanın elini ya da sıradaki kartı göremez.
 import {
-  yeniNovo, novoDagit, novoHamle, novoYasal, oyunSatinAl, novoYenidenBaslat, paraYukle, molaAyarla,
+  yeniNovo, yanAyarla, novoDagit, novoHamle, novoYasal, oyunSatinAl, novoYenidenBaslat, paraYukle, molaAyarla,
   NOVO_AZAMI_OYUNCU, ANTE_SECENEKLERI,
 } from '../js/novo.js';
 import {
@@ -28,12 +28,12 @@ export const AD_AZAMI = 16;
 // karar süresi başlamasın diye o süre eklenir.
 export const SURE = {
   hazir: 5000,          // biri "hazırım" deyince el bu kadar sonra dağıtılır
-  karar: 5000,          // kart çekme, oyna/pas, sigorta, kasaya kart çektirme (Erman: 15 sn çok uzun)
+  karar: 10000,         // kart çekme, oyna/pas, sigorta, kasaya kart çektirme (Erman 22 Kas: 5 sn hızlı, 10 sn olsun)
   dagitimPayi: 22000,
   dagitimPayiUltimate: 9000, // Ultimate dağıtımı (2 kart + kasa) daha kısa
   sokakPayi: 3000,           // flop / river açılışı   // dağıtım + express animasyonu (telefonda ölçüldü ~20 sn)
   cekmePayi: 4000,      // çekilen kartların dağıtılması
-  otoKarar: 5000,       // otomatik oynayan oyuncunun karar süresi (dolunca kontrol, son kararda pas)
+  otoKarar: 10000,       // otomatik oynayan oyuncunun karar süresi (dolunca kontrol, son kararda pas)
   sonucPayi: 4000,      // el bitince sonuç görünsün diye otomatik dağıtım bu kadar daha bekler
 };
 // Süre dolunca yapılan hamle: kart çekmez, oyuna girmez, sigorta yapmaz, ante'yi alır.
@@ -71,7 +71,21 @@ function oturt(oda, { id, ad }) {
 }
 // El bitince bekleyenleri oturtur. Değişiklik olduysa true.
 export function bekleyenleriOturt(oda) {
+  if (oda.g && araDaMi(oda.g) && oda.yenidenIstek) {
+    oda.yenidenIstek = false; oda.hazir = {}; oda.molaIstek = {};
+    oda.g = motor(oda).yeniden(oda.g);
+    bekleyenleriOturt(oda);
+    return true;
+  }
   const g = oda.g;
+  if (g && araDaMi(g) && oda.molaIstek && Object.keys(oda.molaIstek).length) {
+    for (const k of Object.keys(oda.molaIstek)) {
+      const j = Number(k);
+      if (g.oyuncular[j]) { oda.g = motor(oda).mola(oda.g, j, true); if (oda.hazir) delete oda.hazir[j]; if (oda.oto) delete oda.oto[j]; }
+    }
+    oda.molaIstek = {};
+    return bekleyenleriOturt(oda) || true;
+  }
   if (!g || !araDaMi(g) || !(oda.bekleyen && oda.bekleyen.length)) return false;
   const yer = AZAMI[oda.oyun] - oda.koltuklar.length;
   const gelen = oda.bekleyen.splice(0, Math.max(0, yer));
@@ -146,7 +160,8 @@ export function islem(oda, id, m) {
       }
       case 'dagit':
       case 'hazir': {
-        // Herkes kendi adına "hazırım" der. Hazır olanlar elde oynar; basmayan o eli dışarıda geçirir.
+        // Herkes kendi adına "hazırım" der; herkes hazır olunca hemen, değilse geri sayımla dağıtılır.
+        // Basmayan da ele girer (molada değilse).
         if (!g) return { hata: 'Oyun başlamadı.' };
         if (i < 0) return { hata: 'İzleyici oyuna giremez.' };
         if (!araDaMi(g)) return { hata: 'El sürüyor.' };
@@ -156,10 +171,12 @@ export function islem(oda, id, m) {
           if (oda.oto) delete oda.oto[i];
           return { olay: { tip: 'hazir', koltuk: i, iptal: true } };
         }
+        // Moladaki oyuncu "ele gir" derse masaya döner.
+        if (g.oyuncular[i].mola) { oda.g = motor(oda).mola(g, i, false); return islem(oda, id, m); }
         const ger = motor(oda).gereken;
         if (g.oyuncular[i].fis < ger(g, i)) return { hata: 'Paran girişe yetmiyor.' };
         oda.hazir = { ...(oda.hazir || {}), [i]: true };
-        const aday = g.oyuncular.map((o, j) => j).filter(j => g.oyuncular[j].fis >= ger(g, j));
+        const aday = g.oyuncular.map((o, j) => j).filter(j => !g.oyuncular[j].mola && g.oyuncular[j].fis >= ger(g, j));
         if (aday.every(j => oda.hazir[j])) return hazirDagit(oda);
         return { olay: { tip: 'hazir', koltuk: i } };
       }
@@ -179,6 +196,7 @@ export function islem(oda, id, m) {
         const temiz = { tip: h.tip };
         if (h.tip === 'degistir') temiz.konumlar = (h.konumlar || []).map(Number);
         if (h.tip === 'sigorta') temiz.miktar = Number(h.miktar) || 0;
+        if (h.tip === 'gec' && h.oyna) temiz.oyna = true; // "çekmiyorum, oyna": sırası gelince tekrar sorulmadan oynar
         oda.g = novoHamle(g, temiz);
         return { olay: { tip: h.tip, koltuk: i } };
       }
@@ -219,8 +237,27 @@ export function islem(oda, id, m) {
         }
         return { olay: { tip: 'oto', koltuk: i, acik: !!m.acik } };
       }
+      case 'yan': {
+        // Kasaya ve komşuya express (1 ante): eller arasında, sonraki elde geçerli. Yalnız Novo.
+        if (!g || i < 0) return { hata: 'Oyun başlamadı.' };
+        if (oda.oyun === 'ultimate') return { hata: 'Yan express yalnız Novo masasında.' };
+        if (!araDaMi(g)) return { hata: 'El bitince değiştirilebilir.' };
+        const yan = {};
+        if ('kasa' in m) yan.kasa = !!m.kasa;
+        if ('komsu' in m) yan.komsu = !!m.komsu;
+        oda.g = yanAyarla(g, i, yan);
+        return { olay: { tip: 'yan', koltuk: i } };
+      }
       case 'mola': {
         if (!g || i < 0) return { hata: 'Oyun başlamadı.' };
+        // El sürerken mola isteği el bitince uygulanır (oyuncu o eli bitirir ya da süre dolunca pas geçer).
+        if (!araDaMi(g)) {
+          oda.molaIstek = { ...(oda.molaIstek || {}) };
+          if (m.mola) oda.molaIstek[i] = true; else delete oda.molaIstek[i];
+          if (m.mola && oda.oto) delete oda.oto[i];
+          return { olay: { tip: 'mola', koltuk: i, bekliyor: true } };
+        }
+        if (oda.molaIstek) delete oda.molaIstek[i];
         oda.g = motor(oda).mola(g, i, !!m.mola);
         if (m.mola && oda.hazir) delete oda.hazir[i];
         if (m.mola && oda.oto) delete oda.oto[i];
@@ -237,7 +274,9 @@ export function islem(oda, id, m) {
       }
       case 'yeniden': {
         if (id !== oda.sahip) return { hata: 'Baştan başlatmayı masayı açan yapar.' };
-        if (!g || !araDaMi(g)) return { hata: 'El bitince baştan başlatılabilir.' };
+        if (!g) return { hata: 'Oyun başlamadı.' };
+        // El sürerken istenirse el bitince baştan başlar (Erman 22 Kas: "çalışmıyor" gibi görünüyordu).
+        if (!araDaMi(g)) { oda.yenidenIstek = true; return { olay: { tip: 'yenidenIstek' }, hata: 'El sürüyor; el bitince masa baştan başlayacak.' }; }
         oda.hazir = {};
         oda.g = motor(oda).yeniden(g);
         return { olay: { tip: 'yeniden' } };
@@ -253,7 +292,8 @@ export function islem(oda, id, m) {
 function hazirDagit(oda) {
   let g = oda.g;
   const mt = motor(oda);
-  for (let j = 0; j < g.oyuncular.length; j++) g = mt.mola(g, j, !oda.hazir[j]);
+  // Molada olmayan ve parası yeten herkes ele girer; "hazırım" yalnız beklemeyi kısaltır
+  // (Erman 22 Kas: basmayan ele giremiyordu). Oynamak istemeyen "Molaya çık" der.
   oda.g = mt.dagit(g);
   oda.hazir = {};
   oda.secimler = {};
@@ -384,7 +424,7 @@ export function gorunum(oda, id, olay = null) {
   return {
     tip: 'durum', rev: oda.rev, kod: oda.kod, oyun: oda.oyun || 'novo',
     koltuklar: oda.koltuklar.map(k => ({ ad: k.ad })),
-    benim: koltugu(oda, id), bekliyor: (oda.bekleyen || []).some(b => b.id === id), sahipMi: oda.sahip === id, ayar: oda.ayar,
+    benim: koltugu(oda, id), molaIstek: !!(oda.molaIstek && oda.molaIstek[koltugu(oda, id)]), bekliyor: (oda.bekleyen || []).some(b => b.id === id), sahipMi: oda.sahip === id, ayar: oda.ayar,
     secimler: oda.secimler, hazir: oda.hazir || {}, oto: oda.oto || {}, g: gizle(oda.g, koltugu(oda, id)), olay,
     sayac: oda.sayac ? { tip: oda.sayac.tip, koltuk: oda.sayac.koltuk, kalan: Math.max(0, oda.sayac.bitis - Date.now()), toplam: oda.sayac.sure || (oda.sayac.tip === 'hazir' ? SURE.hazir : SURE.karar) } : null,
   };
