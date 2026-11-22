@@ -187,7 +187,9 @@ function formAc(yeniKip, onKod = '', yeniOyun = 'novo') {
   kip = yeniKip; oyun = yeniOyun;
   $('on-baslik').textContent = kip === 'ac' ? (oyun === 'ultimate' ? 'Ultimate masası aç (BETA)' : 'Online Novo masası aç') : 'Masaya katıl';
   $('on-tamam').textContent = kip === 'ac' ? 'Masayı aç' : 'Katıl';
-  $('on-kod-alan').hidden = kip === 'ac';
+  // Masa açarken de kod kendin seçilebilir; boş bırakılırsa üretilir (Erman 22 Kas).
+  $('on-kod-alan').hidden = false;
+  $('on-kod-yazi').textContent = kip === 'ac' ? 'Masa kodu (istersen kendin seç, boşsa üretilir)' : 'Masa kodu';
   $('on-kod').value = onKod;
   $('on-ad').value = oku('novo.ad') || '';
   $('on-hata').textContent = sunucuAdresi() ? '' : 'Online sunucu henüz yayında değil.';
@@ -214,7 +216,11 @@ export function onlineBagla() {
       const k = $('on-kod').value.trim().toUpperCase();
       if (!/^[A-Z0-9]{4,8}$/.test(k)) { $('on-hata').textContent = 'Masa kodunu yaz (4-8 harf/rakam).'; return; }
       kod = k;
-    } else kod = kodUret();
+    } else {
+      const k = $('on-kod').value.trim().toUpperCase();
+      if (k && !/^[A-Z0-9]{4,8}$/.test(k)) { $('on-hata').textContent = 'Masa kodu 4-8 harf/rakam olmalı ya da boş bırak.'; return; }
+      kod = k || kodUret();
+    }
     $('on-hata').textContent = 'Bağlanıyor…';
     baglan();
   };

@@ -695,3 +695,5 @@ input, select {
 .sohbet-kutu input { background: rgba(0, 0, 0, .3); border: 1px solid #ffffff33; color: #fff; }
 .sohbet-kutu .btn-ana { opacity: .9; }
 .sohbet-dugme { background: rgba(8, 30, 20, .35); }
+
+#on-kod-alan[hidden] { display: none; }
