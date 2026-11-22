@@ -291,12 +291,14 @@ function bagla() {
       <div class="ne" style="text-align:center">Masa kodu: <b>${kacis((api && api.kod) || '')}</b></div>
       <button class="btn-ikincil" id="um-kurallar">Kurallar ve ödeme tablosu</button>
       ${api && api.sahipMi ? '<button class="btn-ikincil" id="um-yukle">Para yükle</button><button class="btn-ikincil" id="um-yeniden">Baştan başlat (herkese $1.000)</button>' : ''}
+      ${api && api.sahipMi ? '<button class="btn-tehlike" id="um-herkes">Masayı kapat (herkes için)</button>' : ''}
       <button class="btn-tehlike" id="um-cik">Masadan çık</button>
       <button class="btn-ana" id="um-tamam">Kapat</button>`, k => {
       k.querySelector('#um-tamam').onclick = perdeKapat;
       k.querySelector('#um-kurallar').onclick = kurallarAc;
       if (k.querySelector('#um-yukle')) k.querySelector('#um-yukle').onclick = () => { perdeKapat(); if (!g.el || g.el.faz === 'bitti') yukleAc(); };
       if (k.querySelector('#um-yeniden')) k.querySelector('#um-yeniden').onclick = async () => { perdeKapat(); if (await onayla('Herkes yeniden $1.000 ile başlasın mı?', 'Başlat')) api.gonder({ tip: 'yeniden' }); };
+      if (k.querySelector('#um-herkes')) k.querySelector('#um-herkes').onclick = async () => { perdeKapat(); if (await onayla('Masa herkes için kapatılsın mı? Oyun biter, herkes ana ekrana döner.', 'Kapat')) api.gonder({ tip: 'kapat' }); };
       k.querySelector('#um-cik').onclick = async () => { perdeKapat(); if (await onayla('Masadan çıkılsın mı? Aynı kodla geri dönebilirsin.', 'Çık')) api.cik(); };
     });
   };

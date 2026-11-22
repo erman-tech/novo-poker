@@ -271,3 +271,13 @@ test('Ultimate: oyundan çıkan dağıtılmaz, ele gir diyen döner', () => {
   assert.equal(isle(o, 'a', { tip: 'hazir' }).olay.tip, 'dagit', 'moladaki beklenmez');
   assert.equal(o.g.el.oyuncular[1].katildi, false);
 });
+
+test('masayı kapat: yalnız açan; herkesin koltuğu ve oyun silinir', () => {
+  const o = yeniOdaIle(['A', 'B']);
+  islem(o, 'id0', { tip: 'basla' });
+  assert.match(isle(o, 'id1', { tip: 'kapat' }).hata, /açan/);
+  assert.equal(isle(o, 'id0', { tip: 'kapat' }).olay.tip, 'kapandi');
+  assert.equal(o.g, null); assert.equal(o.koltuklar.length, 0); assert.equal(o.sahip, null);
+  assert.equal(isle(o, 'yeni', { tip: 'katil', ad: 'C' }).olay.tip, 'katil', 'aynı kodla yeni masa açılır');
+  assert.equal(o.sahip, 'yeni');
+});

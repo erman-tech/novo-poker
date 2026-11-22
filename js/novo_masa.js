@@ -949,6 +949,7 @@ export function novoBagla() {
       <button class="btn-ikincil" id="nm-kutlama">Büyük bonus kutlamasını göster</button>
       ${online && !online.sahipMi ? '' : `<button class="btn-ikincil" id="nm-yeniden">Baştan başlat (herkese ${para(N.g.baslangicFis)})</button>`}
       ${online ? `<div class="ne" style="text-align:center">Masa kodu: <b>${kacis(online.kod || '')}</b></div>` : ''}
+      ${online && online.sahipMi ? '<button class="btn-tehlike" id="nm-herkes">Masayı kapat (herkes için)</button>' : ''}
       <button class="btn-tehlike" id="nm-kapat">${online ? 'Masadan çık' : 'Masayı kapat'}</button>
       <button class="btn-ana" id="nm-tamam">Kapat</button>`, k => {
       k.querySelector('#nm-tamam').onclick = perdeKapat;
@@ -985,6 +986,10 @@ export function novoBagla() {
         if (online) { if (await onayla(`Herkes yeniden ${para(N.g.baslangicFis)} ile başlasın mı?`, 'Başlat')) online.gonder({ tip: 'yeniden' }); return; }
         if (!(await onayla(`Herkes yeniden ${para(N.g.baslangicFis)} ile başlasın mı? Kasanın bu oyun sayacı sıfırlanır.`, 'Başlat'))) return;
         gecmiseAt(); N.g = novoYenidenBaslat(N.g); kaydet(); ciz();
+      };
+      if (k.querySelector('#nm-herkes')) k.querySelector('#nm-herkes').onclick = async () => {
+        perdeKapat();
+        if (await onayla('Masa herkes için kapatılsın mı? Oyun biter, herkes ana ekrana döner.', 'Kapat')) online.gonder({ tip: 'kapat' });
       };
       k.querySelector('#nm-kapat').onclick = async () => {
         perdeKapat();

@@ -73,6 +73,8 @@ function gelen(m) {
     return;
   }
   if (m.tip !== 'durum') return;
+  // Masayı açan masayı kapattı: herkes ana ekrana döner.
+  if (m.olay && m.olay.tip === 'kapandi') { son = null; cik(); $('on-hata').textContent = ''; setTimeout(() => alert('Masa kapatıldı.'), 50); return; }
   son = m;
   if (m.benim >= 0) { yaz('novo.sonMasa', m.kod); const benimAd = m.koltuklar[m.benim].ad; if (!/^Guest\d+$/.test(benimAd)) yaz('novo.ad', benimAd); }
   const tur = EKRAN[m.oyun] ? m.oyun : 'novo';

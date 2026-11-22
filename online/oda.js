@@ -281,6 +281,15 @@ export function islem(oda, id, m) {
         oda.g = motor(oda).yeniden(g);
         return { olay: { tip: 'yeniden' } };
       }
+      case 'kapat': {
+        // Masayı açan masayı herkes için kapatır: oyun ve koltuklar silinir, herkes ana ekrana döner.
+        // Aynı kodla açılan sonraki masa sıfırdan başlar.
+        if (id !== oda.sahip) return { hata: 'Masayı yalnız açan kapatabilir.' };
+        const yeni = yeniOda(oda.kod);
+        for (const k of Object.keys(oda)) delete oda[k];
+        Object.assign(oda, yeni, { rev: (yeni.rev || 0) + 1 });
+        return { olay: { tip: 'kapandi' } };
+      }
       default: return { hata: 'Bilinmeyen istek.' };
     }
   } catch (e) {
