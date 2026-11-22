@@ -54,7 +54,13 @@ function baglan() {
   if (!adres) { $('on-hata').textContent = 'Online sunucu henüz yayında değil.'; return false; }
   kapatildi = false;
   try { ws = new WebSocket(`${adres}/masa/${kod}?id=${istemciId()}`); } catch (e) { $('on-hata').textContent = 'Sunucuya bağlanılamadı.'; return false; }
-  ws.onopen = () => { deneme = 0; gonder({ tip: 'katil', ad, oyun }); };
+  ws.onopen = () => {
+    deneme = 0;
+    // Yeniden bağlanınca eski "bağlantı koptu" yazısı kalmasın (sunucu yayınlanırken bağlantılar kısa süre kopar).
+    if (/^Bağlantı/.test($('l-hata').textContent)) $('l-hata').textContent = '';
+    if (oyunda) oyunHata('');
+    gonder({ tip: 'katil', ad, oyun });
+  };
   ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } gelen(m); };
   ws.onclose = () => {
     if (kapatildi) return;
