@@ -96,3 +96,30 @@ test('herkes $1.000 başlar; para yalnız masayı açan yükler; parası biten h
   assert.equal(o.g.oyuncular[1].fis, 510);
   assert.equal(isle(o, 'a', { tip: 'ayar', baslangicFis: 5000 }).hata, 'Oyun başladıktan sonra ayar değişmez.');
 });
+
+test('Ultimate masası: oyun ilk girişte seçilir; eşzamanlı karar; süre dolunca kontrol ve pas', () => {
+  const o = yeniOda('U1');
+  isle(o, 'a', { tip: 'katil', ad: 'A', oyun: 'ultimate' }, 0);
+  isle(o, 'b', { tip: 'katil', ad: 'B', oyun: 'novo' }, 0);
+  assert.equal(o.oyun, 'ultimate', 'ikinci gelenin seçimi oyunu değiştirmez');
+  isle(o, 'a', { tip: 'basla' }, 0);
+  assert.equal(o.g.tur, 'ultimate');
+  isle(o, 'a', { tip: 'hazir' }, 0); isle(o, 'b', { tip: 'hazir' }, 0);
+  assert.equal(o.g.el.faz, 'preflop');
+  assert.equal(o.sayac.tip, 'ukarar');
+  const v = gorunum(o, 'a');
+  assert.deepEqual(v.g.el.krupiye, [null, null]);
+  assert.deepEqual(v.g.el.ortak, [null, null, null, null, null]);
+  assert.ok(v.g.el.oyuncular[0].kartlar[0], 'kendi kartlarını görür');
+  assert.deepEqual(v.g.el.oyuncular[1].kartlar, [null, null], 'başkasının kartları el bitene kadar gizli');
+  assert.equal(v.g.el.deste, undefined);
+  assert.equal(isle(o, 'a', { tip: 'hamle', hamle: { secim: 'kontrol' } }, 100).olay.tip, 'karar');
+  assert.equal(o.g.el.faz, 'preflop');
+  assert.equal(sureDoldu(o, o.sayac.bitis).olay.tip, 'karar');
+  assert.equal(o.g.el.faz, 'flop');
+  assert.equal(gorunum(o, 'a').g.el.ortak.filter(Boolean).length, 3);
+  sureDoldu(o, o.sayac.bitis); sureDoldu(o, o.sayac.bitis);
+  assert.equal(o.g.el.faz, 'bitti');
+  assert.ok(gorunum(o, 'a').g.el.krupiye[0], 'el bitince kasa kartları görünür');
+  assert.ok(gorunum(o, 'a').g.el.oyuncular[1].kartlar[0], 'el bitince herkesin kartı görünür');
+});

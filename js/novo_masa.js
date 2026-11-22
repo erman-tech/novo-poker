@@ -42,7 +42,7 @@ export function novoDevam() {
   return true;
 }
 
-export function onlineAc(api) { online = api; N = { g: null, gecmis: [] }; maske = null; mesgul = false; }
+export function onlineAc(api) { online = api; N = { g: null, gecmis: [] }; maske = null; mesgul = false; krupiyeKur($('n-krupiye-kadin')); }
 export function onlineKapat() { online = null; N = null; maske = null; mesgul = false; }
 let onlineKuyruk = Promise.resolve();
 export function onlineDurum(m) {

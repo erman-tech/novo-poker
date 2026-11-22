@@ -3,6 +3,7 @@
 // oyun başlayınca durumu Novo ekranına (novo_masa.js) verir.
 import { $, ekranGoster, kacis, para, onayla } from './arayuz.js';
 import { onlineAc, onlineDurum, onlineHata, onlineKapat, yatayKilitle } from './novo_masa.js';
+import { ultimateOnlineAc, ultimateOnlineDurum, ultimateOnlineHata, ultimateOnlineKapat } from './ultimate_masa.js';
 import * as ses from './ses.js';
 
 // Yayındaki sunucu adresi. Yerelde (localhost) yerel deneme sunucusu kullanılır;
@@ -34,11 +35,18 @@ function kodUret() {
   return Array.from(r, x => abc[x % abc.length]).join('');
 }
 
-let ws = null, kod = null, ad = '', kapatildi = true, deneme = 0, oyunda = false, son = null, kip = 'ac';
+let ws = null, kod = null, ad = '', kapatildi = true, deneme = 0, oyunda = null, son = null, kip = 'ac', oyun = 'novo';
+const OYUN_AD = { novo: 'Novo Poker', ultimate: "Ultimate Texas Hold'em · BETA" };
+// Oyun ekranı: masanın oyununa göre Novo ya da Ultimate
+const EKRAN = {
+  novo: { ac: onlineAc, durum: onlineDurum, hata: onlineHata, kapat: onlineKapat },
+  ultimate: { ac: ultimateOnlineAc, durum: ultimateOnlineDurum, hata: ultimateOnlineHata, kapat: ultimateOnlineKapat },
+};
+const oyunHata = t => EKRAN[oyunda].hata(t);
 
 function gonder(m) {
   if (ws && ws.readyState === 1) ws.send(JSON.stringify(m));
-  else { const t = 'Bağlantı yok, yeniden bağlanılıyor…'; oyunda ? onlineHata(t) : ($('l-hata').textContent = t); }
+  else { const t = 'Bağlantı yok, yeniden bağlanılıyor…'; oyunda ? oyunHata(t) : ($('l-hata').textContent = t); }
 }
 
 function baglan() {
@@ -46,12 +54,12 @@ function baglan() {
   if (!adres) { $('on-hata').textContent = 'Online sunucu henüz yayında değil.'; return false; }
   kapatildi = false;
   try { ws = new WebSocket(`${adres}/masa/${kod}?id=${istemciId()}`); } catch (e) { $('on-hata').textContent = 'Sunucuya bağlanılamadı.'; return false; }
-  ws.onopen = () => { deneme = 0; gonder({ tip: 'katil', ad }); };
+  ws.onopen = () => { deneme = 0; gonder({ tip: 'katil', ad, oyun }); };
   ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } gelen(m); };
   ws.onclose = () => {
     if (kapatildi) return;
     const t = 'Bağlantı koptu, yeniden bağlanıyor…';
-    oyunda ? onlineHata(t) : ($('l-hata').textContent = t);
+    oyunda ? oyunHata(t) : ($('l-hata').textContent = t);
     setTimeout(() => { if (!kapatildi) baglan(); }, Math.min(5000, 600 * (++deneme)));
   };
   return true;
@@ -59,7 +67,7 @@ function baglan() {
 
 function gelen(m) {
   if (m.tip === 'hata') {
-    if (oyunda) onlineHata(m.hata);
+    if (oyunda) oyunHata(m.hata);
     else if (document.querySelector('#e-lobi.etkin')) $('l-hata').textContent = m.hata;
     else $('on-hata').textContent = m.hata;
     return;
@@ -67,14 +75,16 @@ function gelen(m) {
   if (m.tip !== 'durum') return;
   son = m;
   if (m.benim >= 0) { yaz('novo.sonMasa', m.kod); const benimAd = m.koltuklar[m.benim].ad; if (!/^Guest\d+$/.test(benimAd)) yaz('novo.ad', benimAd); }
-  if (!m.g) { oyunda = false; lobiCiz(m); return; }
-  if (!oyunda) { oyunda = true; onlineAc({ gonder, cik }); yatayKilitle(); }
-  onlineDurum(m);
+  const tur = EKRAN[m.oyun] ? m.oyun : 'novo';
+  if (!m.g) { if (oyunda) EKRAN[oyunda].kapat(); oyunda = null; lobiCiz(m); return; }
+  if (oyunda !== tur) { if (oyunda) EKRAN[oyunda].kapat(); oyunda = tur; EKRAN[tur].ac({ gonder, cik }); yatayKilitle(); }
+  EKRAN[tur].durum(m);
 }
 
 function lobiCiz(m) {
   if (!document.querySelector('#e-lobi.etkin')) ekranGoster('e-lobi');
   $('l-kod').textContent = m.kod;
+  $('l-oyun').textContent = OYUN_AD[m.oyun] || OYUN_AD.novo;
   $('l-sayi').textContent = `${m.koltuklar.length}/3`;
   $('l-oyuncular').innerHTML = m.koltuklar.map((k, i) => `<div class="lobi-oyuncu ${i === m.benim ? 'ben' : ''}">
       <span class="no">${i + 1}</span><b>${kacis(k.ad)}</b>${i === 0 ? '<span class="etiket">masayı açan</span>' : ''}${i === m.benim ? '<span class="etiket sen">sen</span>' : ''}</div>`).join('')
@@ -94,17 +104,17 @@ function cik() {
   kapatildi = true;
   try { ws && ws.close(); } catch (e) { /* zaten kapalı */ }
   ws = null; son = null;
-  if (oyunda) onlineKapat();
-  oyunda = false;
+  if (oyunda) EKRAN[oyunda].kapat();
+  oyunda = null;
   yaz('novo.sonMasa', null);
   history.replaceState(null, '', location.pathname);
   anaMenuCiz();
   ekranGoster('e-giris');
 }
 
-function formAc(yeniKip, onKod = '') {
-  kip = yeniKip;
-  $('on-baslik').textContent = kip === 'ac' ? 'Online masa aç' : 'Masaya katıl';
+function formAc(yeniKip, onKod = '', yeniOyun = 'novo') {
+  kip = yeniKip; oyun = yeniOyun;
+  $('on-baslik').textContent = kip === 'ac' ? (oyun === 'ultimate' ? 'Ultimate masası aç (BETA)' : 'Online Novo masası aç') : 'Masaya katıl';
   $('on-tamam').textContent = kip === 'ac' ? 'Masayı aç' : 'Katıl';
   $('on-kod-alan').hidden = kip === 'ac';
   $('on-kod').value = onKod;
@@ -122,6 +132,7 @@ function anaMenuCiz() {
 export function onlineBagla() {
   anaMenuCiz();
   $('a-online').onclick = () => { ses.acil(); formAc('ac'); };
+  $('a-ultimate').onclick = () => { ses.acil(); formAc('ac', '', 'ultimate'); };
   $('a-katil').onclick = () => { ses.acil(); formAc('katil'); };
   $('a-don').onclick = () => { ses.acil(); kod = oku('novo.sonMasa'); ad = oku('novo.ad') || ''; if (kod) baglan(); };
   $('on-geri').onclick = () => ekranGoster('e-giris');
@@ -142,7 +153,7 @@ export function onlineBagla() {
   $('l-cik').onclick = async () => { if (await onayla('Masadan çıkılsın mı?', 'Çık')) cik(); };
   $('l-davet').onclick = async () => {
     const url = `${location.origin}${location.pathname}?masa=${kod}`;
-    const metin = `Novo Poker masama gel: ${kod}`;
+    const metin = `${son && son.oyun === 'ultimate' ? 'Ultimate Texas' : 'Novo Poker'} masama gel: ${kod}`;
     try {
       if (navigator.share) await navigator.share({ title: 'Novo Poker', text: metin, url });
       else { await navigator.clipboard.writeText(`${metin} ${url}`); $('l-not').textContent = 'Davet bağlantısı kopyalandı.'; }

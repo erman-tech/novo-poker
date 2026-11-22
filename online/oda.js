@@ -6,6 +6,19 @@ import {
   yeniNovo, novoDagit, novoHamle, novoYasal, oyunSatinAl, novoYenidenBaslat, paraYukle, molaAyarla,
   NOVO_AZAMI_OYUNCU, ANTE_SECENEKLERI,
 } from '../js/novo.js';
+import {
+  yeniUltimate, ultimateDagit, ultimateKarar, ultimateZamanAsimi, ultimateMola, tripsAyarla, ultimateYukle,
+  ultimateYenidenBaslat, bekleyenler, gereken, ULTIMATE_AZAMI_OYUNCU,
+} from '../js/ultimate.js';
+
+export const OYUNLAR = ['novo', 'ultimate'];
+const AZAMI = { novo: NOVO_AZAMI_OYUNCU, ultimate: ULTIMATE_AZAMI_OYUNCU };
+// Oyuna göre motor işlevleri
+const MOTOR = {
+  novo: { yeni: yeniNovo, dagit: novoDagit, mola: molaAyarla, yukle: paraYukle, yeniden: novoYenidenBaslat, gereken: g => 4 * g.ante },
+  ultimate: { yeni: yeniUltimate, dagit: ultimateDagit, mola: ultimateMola, yukle: ultimateYukle, yeniden: ultimateYenidenBaslat, gereken },
+};
+const motor = oda => MOTOR[oda.oyun || 'novo'];
 
 const klon = o => JSON.parse(JSON.stringify(o));
 export const AD_AZAMI = 16;
@@ -16,14 +29,16 @@ export const AD_AZAMI = 16;
 export const SURE = {
   hazir: 5000,          // biri "hazırım" deyince el bu kadar sonra dağıtılır
   karar: 15000,         // kart çekme, oyna/pas, sigorta, kasaya kart çektirme
-  dagitimPayi: 22000,   // dağıtım + express animasyonu (telefonda ölçüldü ~20 sn)
+  dagitimPayi: 22000,
+  dagitimPayiUltimate: 9000, // Ultimate dağıtımı (2 kart + kasa) daha kısa
+  sokakPayi: 3000,           // flop / river açılışı   // dağıtım + express animasyonu (telefonda ölçüldü ~20 sn)
   cekmePayi: 4000,      // çekilen kartların dağıtılması
 };
 // Süre dolunca yapılan hamle: kart çekmez, oyuna girmez, sigorta yapmaz, ante'yi alır.
 export const VARSAYILAN = { cekme: 'gec', karar: 'pas' };
 
 export function yeniOda(kod) {
-  return { kod, koltuklar: [], izleyenler: [], sahip: null, g: null, ayar: { baslangicFis: BASLANGIC_FIS, ante: 25 }, secimler: {}, hazir: {}, sayac: null, misafirNo: 100, rev: 0 };
+  return { kod, oyun: 'novo', koltuklar: [], izleyenler: [], sahip: null, g: null, ayar: { baslangicFis: BASLANGIC_FIS, ante: 25 }, secimler: {}, hazir: {}, sayac: null, misafirNo: 100, rev: 0 };
 }
 
 // Online masada herkes $1.000 ile başlar; para biten, masayı açan yüklemezse oynayamaz.
@@ -53,7 +68,8 @@ export function islem(oda, id, m) {
       case 'katil': {
         if (i >= 0) { const ad = adTemizle(m.ad); if (ad) adDegistir(oda, i, ad); return { olay: { tip: 'katil', koltuk: i } }; }
         if (g) { if (!oda.izleyenler.includes(id)) oda.izleyenler.push(id); return { hata: 'Oyun başladı; izleyici olarak bağlandın.' }; }
-        if (oda.koltuklar.length >= NOVO_AZAMI_OYUNCU) return { hata: `Masa dolu (en çok ${NOVO_AZAMI_OYUNCU} oyuncu).` };
+        if (!oda.koltuklar.length && OYUNLAR.includes(m.oyun)) oda.oyun = m.oyun; // masayı açan oyunu seçer
+        if (oda.koltuklar.length >= AZAMI[oda.oyun]) return { hata: `Masa dolu (en çok ${AZAMI[oda.oyun]} oyuncu).` };
         let ad = adTemizle(m.ad);
         if (ad && oda.koltuklar.some(k => k.ad.toLocaleLowerCase('tr') === ad.toLocaleLowerCase('tr'))) return { hata: 'Bu ad masada var, başka bir ad yaz.' };
         if (!ad) ad = misafirAdi(oda);
@@ -87,7 +103,7 @@ export function islem(oda, id, m) {
         if (id !== oda.sahip) return { hata: 'Oyunu masayı açan başlatır.' };
         if (g) return { hata: 'Oyun zaten başladı.' };
         if (!oda.koltuklar.length) return { hata: 'Masada oyuncu yok.' };
-        oda.g = yeniNovo({ adlar: oda.koltuklar.map(k => k.ad), kod: oda.kod, baslangicFis: oda.ayar.baslangicFis, ante: oda.ayar.ante });
+        oda.g = motor(oda).yeni({ adlar: oda.koltuklar.map(k => k.ad), kod: oda.kod, baslangicFis: oda.ayar.baslangicFis, ante: oda.ayar.ante });
         return { olay: { tip: 'basla' } };
       }
       case 'dagit':
@@ -96,14 +112,21 @@ export function islem(oda, id, m) {
         if (!g) return { hata: 'Oyun başlamadı.' };
         if (i < 0) return { hata: 'İzleyici oyuna giremez.' };
         if (!araDaMi(g)) return { hata: 'El sürüyor.' };
-        if (g.oyuncular[i].fis < 4 * g.ante) return { hata: 'Paran girişe yetmiyor: para yükle.' };
+        const ger = motor(oda).gereken;
+        if (g.oyuncular[i].fis < ger(g, i)) return { hata: 'Paran girişe yetmiyor.' };
         oda.hazir = { ...(oda.hazir || {}), [i]: true };
-        const aday = g.oyuncular.map((o, j) => j).filter(j => g.oyuncular[j].fis >= 4 * g.ante);
+        const aday = g.oyuncular.map((o, j) => j).filter(j => g.oyuncular[j].fis >= ger(g, j));
         if (aday.every(j => oda.hazir[j])) return hazirDagit(oda);
         return { olay: { tip: 'hazir', koltuk: i } };
       }
       case 'hamle': {
         if (!g || !g.el) return { hata: 'El yok.' };
+        if (oda.oyun === 'ultimate') {
+          if (i < 0) return { hata: 'İzleyici karar veremez.' };
+          const secim = m.hamle && m.hamle.secim;
+          oda.g = ultimateKarar(g, i, secim);
+          return { olay: { tip: 'karar', koltuk: i, secim, faz: g.el.faz } };
+        }
         const y = novoYasal(g);
         if (!y) return { hata: 'Şu an karar beklenmiyor.' };
         if (y.oyuncu !== i) return { hata: 'Sıra sende değil.' };
@@ -115,7 +138,13 @@ export function islem(oda, id, m) {
         oda.g = novoHamle(g, temiz);
         return { olay: { tip: h.tip, koltuk: i } };
       }
+      case 'trips': {
+        if (oda.oyun !== 'ultimate' || !g || i < 0) return { hata: 'Trips yalnız Ultimate\'te.' };
+        oda.g = tripsAyarla(g, i, !!m.acik);
+        return { olay: { tip: 'trips', koltuk: i } };
+      }
       case 'satinal': {
+        if (oda.oyun !== 'novo') return { hata: 'Bilinmeyen istek.' };
         if (!g || !g.el || g.el.faz !== 'oyunsuz') return { hata: 'Şu an kasaya kart çektirme sorulmuyor.' };
         const p = g.el.oyuncular[i];
         if (!p || p.satinAldi !== null || p.durum !== 'oynadi') return { hata: 'Bu soru sana sorulmadı.' };
@@ -133,7 +162,7 @@ export function islem(oda, id, m) {
       }
       case 'mola': {
         if (!g || i < 0) return { hata: 'Oyun başlamadı.' };
-        oda.g = molaAyarla(g, i, !!m.mola);
+        oda.g = motor(oda).mola(g, i, !!m.mola);
         if (m.mola && oda.hazir) delete oda.hazir[i];
         return { olay: { tip: 'mola', koltuk: i } };
       }
@@ -143,14 +172,14 @@ export function islem(oda, id, m) {
         if (id !== oda.sahip) return { hata: 'Para yalnız masayı açan yükleyebilir.' };
         const kim = Number.isInteger(Number(m.koltuk)) ? Number(m.koltuk) : i;
         if (!g.oyuncular[kim]) return { hata: 'Oyuncu yok.' };
-        oda.g = paraYukle(g, kim, Number(m.miktar));
+        oda.g = motor(oda).yukle(g, kim, Number(m.miktar));
         return { olay: { tip: 'yukle', koltuk: kim } };
       }
       case 'yeniden': {
         if (id !== oda.sahip) return { hata: 'Baştan başlatmayı masayı açan yapar.' };
         if (!g || !araDaMi(g)) return { hata: 'El bitince baştan başlatılabilir.' };
         oda.hazir = {};
-        oda.g = novoYenidenBaslat(g);
+        oda.g = motor(oda).yeniden(g);
         return { olay: { tip: 'yeniden' } };
       }
       default: return { hata: 'Bilinmeyen istek.' };
@@ -163,8 +192,9 @@ export function islem(oda, id, m) {
 // Hazır olanlarla eli dağıt: hazır olmayan o eli dışarıda (molada) geçirir.
 function hazirDagit(oda) {
   let g = oda.g;
-  for (let j = 0; j < g.oyuncular.length; j++) g = molaAyarla(g, j, !oda.hazir[j]);
-  oda.g = novoDagit(g);
+  const mt = motor(oda);
+  for (let j = 0; j < g.oyuncular.length; j++) g = mt.mola(g, j, !oda.hazir[j]);
+  oda.g = mt.dagit(g);
   oda.hazir = {};
   oda.secimler = {};
   return { olay: { tip: 'dagit' } };
@@ -176,6 +206,8 @@ export function sayacKur(oda, simdi, olay = null) {
   let tip = null, anahtar = null, sure = 0;
   if (g && araDaMi(g)) {
     if (Object.keys(oda.hazir || {}).length) { tip = 'hazir'; anahtar = 'h' + (g.el ? g.el.no : 0); sure = SURE.hazir; }
+  } else if (g && oda.oyun === 'ultimate') {
+    if (bekleyenler(g).length) { tip = 'ukarar'; anahtar = `${g.el.no}:${g.el.faz}`; sure = SURE.karar; }
   } else if (g && g.el.faz === 'oyunsuz') {
     tip = 'oyunsuz'; anahtar = 'o' + g.el.no; sure = SURE.karar;
   } else if (g && g.el) {
@@ -185,9 +217,10 @@ export function sayacKur(oda, simdi, olay = null) {
   if (!tip) { oda.sayac = null; return; }
   if (oda.sayac && oda.sayac.anahtar === anahtar) return;
   let pay = 0;
-  if (olay && olay.tip === 'dagit') pay = SURE.dagitimPayi;
+  if (olay && olay.tip === 'dagit') pay = oda.oyun === 'ultimate' ? SURE.dagitimPayiUltimate : SURE.dagitimPayi;
+  else if (oda.oyun === 'ultimate' && olay && olay.tip === 'karar') pay = SURE.sokakPayi;
   else if (olay && tip === 'karar' && ['gec', 'degistir', 'alti', 'pas'].includes(olay.tip) && !(oda.sayac && oda.sayac.tip === 'karar')) pay = SURE.cekmePayi;
-  oda.sayac = { tip, anahtar, bitis: simdi + pay + sure, koltuk: tip === 'cekme' || tip === 'karar' || tip === 'sigorta' ? novoYasal(g).oyuncu : null };
+  oda.sayac = { tip, anahtar, bitis: simdi + pay + sure, koltuk: ['cekme', 'karar', 'sigorta'].includes(tip) ? novoYasal(g).oyuncu : null };
 }
 
 // Süre dolduysa varsayılan hamleyi yapar. Dönüş: islem gibi { olay } ya da {}.
@@ -199,6 +232,11 @@ export function zamanAsimi(oda, simdi) {
     if (s.tip === 'hazir') {
       if (!araDaMi(g) || !Object.keys(oda.hazir || {}).length) return {};
       return hazirDagit(oda);
+    }
+    if (s.tip === 'ukarar') {
+      if (!bekleyenler(g).length) return {};
+      oda.g = ultimateZamanAsimi(g);
+      return { olay: { tip: 'karar', sure: true, faz: g.el.faz } };
     }
     if (s.tip === 'oyunsuz') {
       if (g.el.faz !== 'oyunsuz') return {};
@@ -237,9 +275,17 @@ function adDegistir(oda, i, ad) {
 }
 
 // İstemciye giden görünüm: deste ve kasanın kapalı kartları çıkarılır.
-export function gizle(g) {
+// ben: bakan oyuncunun koltuğu. Ultimate'ta el bitene kadar başkalarının kartları gizlidir.
+export function gizle(g, ben = -1) {
   if (!g) return null;
   const v = klon(g);
+  if (v.el && v.tur === 'ultimate') {
+    delete v.el.deste;
+    if (!v.el.krupiyeAcik) v.el.krupiye = [null, null];
+    v.el.ortak = v.el.ortak.map((k, j) => (j < v.el.acikOrtak ? k : null));
+    if (v.el.faz !== 'bitti') v.el.oyuncular.forEach((p, i) => { if (i !== ben && p.kartlar) p.kartlar = [null, null]; });
+    return v;
+  }
   if (v.el) {
     delete v.el.deste;
     if (!v.el.krupiyeAcik) v.el.krupiye = v.el.krupiye.map((k, j) => (j === 4 ? k : null));
@@ -249,10 +295,10 @@ export function gizle(g) {
 
 export function gorunum(oda, id, olay = null) {
   return {
-    tip: 'durum', rev: oda.rev, kod: oda.kod,
+    tip: 'durum', rev: oda.rev, kod: oda.kod, oyun: oda.oyun || 'novo',
     koltuklar: oda.koltuklar.map(k => ({ ad: k.ad })),
     benim: koltugu(oda, id), sahipMi: oda.sahip === id, ayar: oda.ayar,
-    secimler: oda.secimler, hazir: oda.hazir || {}, g: gizle(oda.g), olay,
+    secimler: oda.secimler, hazir: oda.hazir || {}, g: gizle(oda.g, koltugu(oda, id)), olay,
     sayac: oda.sayac ? { tip: oda.sayac.tip, koltuk: oda.sayac.koltuk, kalan: Math.max(0, oda.sayac.bitis - Date.now()), toplam: oda.sayac.tip === 'hazir' ? SURE.hazir : SURE.karar } : null,
   };
 }

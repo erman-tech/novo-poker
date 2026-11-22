@@ -4,7 +4,7 @@ import { novoBagla, novoDevam, novoKaydiVar } from './novo_masa.js';
 import { oyuncuBagla, oyuncuKurulumu, oyuncuDevam, oyuncuKaydiVar } from './oyuncu.js';
 import * as ses from './ses.js';
 import { onlineBagla } from './online.js';
-import { ekranGoster, perdeAc, perdeKapat } from './arayuz.js';
+import { ekranGoster } from './arayuz.js';
 
 masaBagla();
 novoBagla();
@@ -12,16 +12,6 @@ oyuncuBagla();
 onlineBagla();
 
 $('u-geri').onclick = () => ekranGoster('e-giris');
-$('a-ultimate').onclick = () => {
-  ses.acil();
-  perdeAc(`<div style="font-size:20px;font-weight:800">Ultimate Texas Hold'em <span class="rozet-beta" style="position:static">BETA</span></div>
-    <div class="ne">Kasaya karşı online Texas hazırlanıyor. Şimdilik internetsiz Texas masasını açabilirsin.</div>
-    <button class="btn-ana" id="ul-texas">İnternetsiz Texas masası</button>
-    <button class="btn-ikincil" id="ul-kapat">Kapat</button>`, k => {
-    k.querySelector('#ul-kapat').onclick = perdeKapat;
-    k.querySelector('#ul-texas').onclick = () => { location.href = 'https://erman-tech.github.io/poker-masasi/'; };
-  });
-};
 
 const sonRol = () => { try { return localStorage.getItem('poker.rol'); } catch (e) { return null; } };
 const rolYaz = r => { try { localStorage.setItem('poker.rol', r); } catch (e) {} };
