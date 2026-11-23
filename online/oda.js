@@ -41,6 +41,7 @@ export const SURE = {
   sigortaPayi: 4000,    // her sigortanın ekranda okunması
 };
 // Süre dolunca yapılan hamle: kart çekmez, oyuna girmez, sigorta yapmaz, ante'yi alır.
+export const MASALAR = ['klasik', 'lacivert', 'yesil', 'antrasit'];
 export const VARSAYILAN = { cekme: 'gec', karar: 'pas' };
 
 export function yeniOda(kod) {
@@ -183,6 +184,12 @@ export function islem(oda, id, m) {
       }
       case 'ayar': {
         if (id !== oda.sahip) return { hata: 'Ayarları masayı açan değiştirir.' };
+        // Masa görünümü: masayı açan seçer, herkeste aynı görünür; oyun sürerken de değişir (Erman 23 Kas).
+        if ('masa' in m) {
+          if (!MASALAR.includes(m.masa)) return { hata: 'Geçersiz masa.' };
+          oda.ayar.masa = m.masa;
+          return { olay: { tip: 'ayar' } };
+        }
         if (g) return { hata: 'Oyun başladıktan sonra ayar değişmez.' };
         const a = Number(m.ante);
         if (a && ANTE_SECENEKLERI.includes(a)) oda.ayar.ante = a;

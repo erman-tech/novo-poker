@@ -380,3 +380,15 @@ test('bağlantısı kopan oyuncu başka cihazdan aynı adla kendi koltuğuna dö
   islem(o, 'cihaz-2', { tip: 'katil', ad: 'Erman' });
   assert.equal(gorunum(o, 'cihaz-2').sahipMi, true);
 });
+
+test('masa görünümü: yalnız masayı açan seçer, oyun sürerken de değişir, herkes görür', () => {
+  const o = yeniOda('MASA01');
+  islem(o, 'sahip-123', { tip: 'katil', ad: 'Erman', oyun: 'novo' });
+  islem(o, 'fidan-123', { tip: 'katil', ad: 'Fidan' });
+  assert.match(islem(o, 'fidan-123', { tip: 'ayar', masa: 'yesil' }).hata, /masayı açan/);
+  assert.match(islem(o, 'sahip-123', { tip: 'ayar', masa: 'mor' }).hata, /Geçersiz/);
+  islem(o, 'sahip-123', { tip: 'ayar', masa: 'antrasit' });
+  islem(o, 'sahip-123', { tip: 'basla' });
+  islem(o, 'sahip-123', { tip: 'ayar', masa: 'yesil' });
+  assert.equal(gorunum(o, 'fidan-123').ayar.masa, 'yesil');
+});
