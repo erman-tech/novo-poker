@@ -365,24 +365,29 @@ function panelCiz0() {
   if (!el || el.faz === 'bitti') {
     const kimse = !g.oyuncular.some((_, i) => katilabilir(g, i));
     const molada = g.oyuncular.some(o => o.mola);
-    let ozet = '';
+    // El sonu tablosu (Erman 23 Kas): her oyuncu tek satır — numara, ad, kalemler etiket olarak,
+    // durum/ayar ve net sonuç aynı satırda; ayrı durum satırı yok.
+    const tutar = v => (v > 0 ? '+' : v < 0 ? '−' : '') + (v ? para(Math.abs(v)) : '');
+    const kAd = k => (DEGER_AD[k.d] || String(k.d)) + RENK_SIMGE[k.r];
+    const satirlar = durum => `<div class="dk-tablo">${g.oyuncular.map((o, i) => {
+      const p = el && el.oyuncular[i];
+      const kalem = p && p.katildi ? (p.odemeler || []).map(k => `<span class="dk-kalem ${k.tutar > 0 ? 'art' : k.tutar < 0 ? 'eks' : ''}">${kacis(k.yazi)}${k.tutar ? ' <b>' + tutar(k.tutar) + '</b>' : ''}</span>`).join('') : `<span class="dk-bos">${el ? 'bu elde yoktu' : ''}</span>`;
+      const net = p && p.katildi ? `<span class="dk-net ${p.net > 0 ? 'art' : p.net < 0 ? 'eks' : ''}">${tutar(p.net) || '$0'}</span>` : '<span class="dk-net"></span>';
+      return `<div class="dk-satir"><span class="dk-no">${i + 1}</span><span class="dk-ad">${kacis(o.ad)}</span><span class="dk-kalemler">${kalem}</span>${net}<span class="dk-durum-yer">${durum(o, i)}</span></div>`;
+    }).join('')}</div>`;
+    let baslik = '';
     if (el) {
       const kn = el.kasaNet;
-      const tutar = v => (v > 0 ? '+' : v < 0 ? '−' : '') + (v ? para(Math.abs(v)) : '');
-      const kAd = k => (DEGER_AD[k.d] || String(k.d)) + RENK_SIMGE[k.r];
-      const cekti = el.krupiyeAtilan && el.krupiyeYeni ? ` · kasa ${kAd(el.krupiyeAtilan)} attı, ${kAd(el.krupiyeYeni)} çekti` : '';
-      ozet = `<div class="sonuc-kutu dokum"><div class="baslik">${el.no}. el · kasa ${kasaYazi(kn)} · kasa: ${kacis(el.krupiyeOyunu ? el.krupiyeElAdi : 'oyun yok')}${cekti}</div>
-        ${el.oyuncular.map((p, i) => p.katildi ? `<div class="dokum-satir"><b>${kacis(g.oyuncular[i].ad)}</b>
-          ${(p.odemeler || []).map(k => `<span class="${k.tutar > 0 ? 'art' : k.tutar < 0 ? 'eks' : ''}">${kacis(k.yazi)} ${tutar(k.tutar)}</span>`).join('')}
-          <span class="toplam ${p.net >= 0 ? 'art' : 'eks'}">= ${tutar(p.net) || '$0'}</span></div>` : '').join('')}</div>`;
+      const cekti = el.krupiyeAtilan && el.krupiyeYeni ? `<span class="dk-not">kasa ${kAd(el.krupiyeAtilan)} attı, ${kAd(el.krupiyeYeni)} çekti</span>` : '';
+      baslik = `<div class="dk-baslik"><span class="dk-elno">${el.no}. el</span><span>Kasa: <b>${kacis(el.krupiyeOyunu ? el.krupiyeElAdi : 'oyun yok')}</b></span><span class="dk-kasa ${kn > 0 ? 'art' : kn < 0 ? 'eks' : ''}">kasa ${kasaYazi(kn)}</span>${cekti}</div>`;
     }
     if (online) {
       const ben = online.benim, hz = online.hazir || {}, oto = online.oto || {};
       const benimO = ben >= 0 ? g.oyuncular[ben] : null;
       const yetmez = benimO && benimO.fis < 4 * g.ante;
       const hazirim = !!hz[ben], otom = !!oto[ben];
-      pn.innerHTML = `<div class="bekleme">${ozet}
-        <div class="mola-satir">${g.oyuncular.map((o, i) => `<span class="mola-dugme ${hz[i] ? 'hazir' : ''}">${i + 1}. ${kacis(o.ad)} · ${o.mola ? 'oyunda değil' : hz[i] ? (oto[i] ? 'otomatik' : 'hazır') : o.fis < 4 * g.ante ? 'parası bitti' : 'bekleniyor'}</span>`).join('')}</div>
+      pn.innerHTML = `<div class="bekleme sonuc-panel">${baslik}
+        ${satirlar((o, i) => `<span class="dk-durum ${hz[i] ? 'hazir' : o.mola ? 'kapali' : ''}">${o.mola ? 'oyunda değil' : hz[i] ? (oto[i] ? 'otomatik' : 'hazır') : o.fis < 4 * g.ante ? 'parası bitti' : 'bekleniyor'}</span>`)}
         <div class="satir" style="width:min(640px,100%)">
           ${online.sahipMi ? '<button class="btn-ikincil" id="n-yukle">Para yükle</button>' : ''}
           ${benimO ? '<button class="btn-ikincil" id="n-ayarlarim">Ayarlarım ⚙</button>' : ''}
@@ -395,8 +400,8 @@ function panelCiz0() {
       if ($('n-ayarlarim')) $('n-ayarlarim').onclick = () => { ses.acil(); konus.kilidiAc(); benimAyar(); };
       return;
     }
-    pn.innerHTML = `<div class="bekleme">${ozet}
-      <div class="mola-satir">${g.oyuncular.map((o, i) => `<button class="mola-dugme ${o.mola ? 'molada' : ''}" data-ayar="${i}">${i + 1}. ${kacis(o.ad)} · ${ayarOzet(o)} ⚙</button>`).join('')}</div>
+    pn.innerHTML = `<div class="bekleme sonuc-panel">${baslik}
+      ${satirlar((o, i) => `<button class="dk-durum dk-ayar ${o.mola ? 'kapali' : ''}" data-ayar="${i}" title="Ayarlar">${ayarOzet(o)} ⚙</button>`)}
       <div class="satir" style="width:min(640px,100%)">
         <button class="btn-ikincil" id="n-yukle">Para yükle</button>
         <button class="btn-ana" id="n-dagit" ${kimse ? 'disabled' : ''}>${el ? 'Sonraki eli dağıt' : 'İlk eli dağıt'}</button>
