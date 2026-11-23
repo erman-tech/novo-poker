@@ -1,6 +1,6 @@
 // Offline önbellek: ilk açılışta tüm dosyalar cihaza kaydedilir.
 // Dosya değişince SURUM artırılır.
-const SURUM = 'novo-online-v24';
+const SURUM = 'novo-online-v25';
 const DOSYALAR = [
   './', 'index.html', 'css/stil.css', 'manifest.webmanifest',
   'js/uygulama.js', 'js/arayuz.js', 'js/masa.js', 'js/oyuncu.js', 'js/motor.js', 'js/kart.js', 'js/ses.js', 'js/fis.js', 'js/novo.js', 'js/novo_masa.js', 'js/krupiye.js', 'js/havai.js', 'js/konus.js', 'js/online.js', 'js/ultimate.js', 'js/ultimate_masa.js',
