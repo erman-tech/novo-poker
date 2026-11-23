@@ -80,7 +80,7 @@ function gelen(m) {
   }
   if (m.tip !== 'durum') return;
   // Masa görünümü masayı açanın seçimi; herkeste aynı (Erman 23 Kas)
-  document.documentElement.dataset.masa = (m.ayar && m.ayar.masa) || 'klasik';
+  document.documentElement.dataset.masa = (m.ayar && m.ayar.masa) || 'yesil';
   sohbetGuncelle(m);
   izleyenGuncelle(m);
   // Yalnız sohbet değiştiyse oyun ekranı yeniden çizilmez (animasyon bölünmesin).
@@ -116,7 +116,7 @@ function lobiCiz(m) {
   if (document.activeElement !== $('l-ad')) $('l-ad').value = m.benim >= 0 ? m.koltuklar[m.benim].ad : '';
   $('l-ayar').querySelectorAll('select').forEach(s => { s.disabled = !m.sahipMi; });
   $('l-ante').value = String(m.ayar.ante);
-  if ($('l-masa')) $('l-masa').value = m.ayar.masa || 'klasik';
+  if ($('l-masa')) $('l-masa').value = m.ayar.masa || 'yesil';
   $('l-basla').hidden = !m.sahipMi;
   $('l-not').textContent = m.benim < 0 ? 'Masa dolu ya da oyun başladı: izleyici olarak bağlısın.'
     : m.sahipMi ? `Herkes geldiğinde oyunu başlat. Herkes ${para(m.ayar.baslangicFis)} ile başlar, ante ${para(m.ayar.ante)}. Para yalnız sen yükleyebilirsin.`
