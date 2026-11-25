@@ -101,7 +101,7 @@ function lobiCiz(m) {
   $('l-oyun').textContent = OYUN_AD[m.oyun] || OYUN_AD.novo;
   $('l-sayi').textContent = `${m.koltuklar.length}/3`;
   $('l-oyuncular').innerHTML = m.koltuklar.map((k, i) => `<div class="lobi-oyuncu ${i === m.benim ? 'ben' : ''}">
-      <span class="no">${i + 1}</span><b>${kacis(k.ad)}</b>${i === 0 ? '<span class="etiket">masayı açan</span>' : ''}${i === m.benim ? '<span class="etiket sen">sen</span>' : ''}</div>`).join('')
+      <span class="no">${i + 1}</span><b>${kacis(k.ad)}</b>${i === 0 ? '<span class="etiket">masayı açan</span>' : ''}${i === m.benim ? '<span class="etiket sen">sen</span>' : ''}${k.kopuk ? '<span class="etiket kopuk">bağlı değil</span>' : ''}</div>`).join('')
     + (m.koltuklar.length < 3 ? '<div class="lobi-oyuncu bos">Boş koltuk · kodu paylaş</div>' : '');
   $('l-ad-satir').hidden = m.benim < 0;
   // Kasaya / komşuya express: oyun başlamadan seçilebilir (Novo), ilk elden geçerli.

@@ -326,7 +326,7 @@ function ciz() {
     // Koltuk numarası ve bu elde kime yan express oynadığı (kasaya / komşunun adı)
     const yanNot = p && p.katildi && (p.yanKasa || p.yanKomsu)
       ? `<div class="yan-not">express → ${[p.yanKasa ? 'kasa' : '', p.yanKomsu && g.oyuncular[p.yanKomsu.kime] ? `${p.yanKomsu.kime + 1}. ${kacis(g.oyuncular[p.yanKomsu.kime].ad)}` : ''].filter(Boolean).join(' · ')}</div>` : '';
-    levha.innerHTML = `<div class="ad"><span class="koltuk-no">${i + 1}</span>${kacis(o.ad)}${o.mola ? ' <span class="mola-etiket">MOLADA</span>' : ''}</div><div class="fis-sayi">${para(gosterilenFis(o, p))}</div>` +
+    levha.innerHTML = `<div class="ad"><span class="koltuk-no">${i + 1}</span>${kacis(o.ad)}${o.mola ? ' <span class="mola-etiket">MOLADA</span>' : ''}${online && online.koltuklar && online.koltuklar[i] && online.koltuklar[i].kopuk ? ' <span class="mola-etiket kopuk-etiket">BAĞLI DEĞİL</span>' : ''}</div><div class="fis-sayi">${para(gosterilenFis(o, p))}</div>` +
       oyuncuHesap(g, o, p, el);
     const yig = document.createElement('div'); yig.className = 'yigin-yeri';
     if (gosterilenFis(o, p) > 0) yig.appendChild(yiginEl(gosterilenFis(o, p), { cesitli: true, boyut: 20, enCok: 7 }));

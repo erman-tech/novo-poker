@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { yeniOda, islem, gorunum, gizle, isle, sureDoldu, sayacKur, SURE } from '../online/oda.js';
+import { yeniOda, islem, gorunum, gizle, isle, sureDoldu, sayacKur, SURE, baglandi } from '../online/oda.js';
 // Herkes hazır deyince el kısa bir geri sayımdan sonra dağıtılır (SURE.hepsiHazir); testte süreyi doldurur.
 function dagit(o) { if (!o.g.el || o.g.el.faz === 'bitti') { if (!o.sayac) sayacKur(o, 0); if (o.sayac) sureDoldu(o, o.sayac.bitis); } }
 import { novoYasal } from '../js/novo.js';
@@ -391,4 +391,18 @@ test('masa görünümü: yalnız masayı açan seçer, oyun sürerken de değiş
   islem(o, 'sahip-123', { tip: 'basla' });
   islem(o, 'sahip-123', { tip: 'ayar', masa: 'yesil' });
   assert.equal(gorunum(o, 'fidan-123').ayar.masa, 'yesil');
+});
+
+test('bağlantısı kopan oyuncu ötekilere "bağlı değil" görünür, dönünce işaret kalkar', () => {
+  const o = yeniOda('KOP1');
+  islem(o, 'erman-id', { tip: 'katil', ad: 'Erman' });
+  islem(o, 'tezcan-id', { tip: 'katil', ad: 'Tezcan' });
+  assert.deepEqual(gorunum(o, 'tezcan-id').koltuklar.map(k => k.kopuk), [false, false]);
+  isle(o, 'erman-id', { tip: 'koptu' });
+  assert.deepEqual(gorunum(o, 'tezcan-id').koltuklar.map(k => k.kopuk), [true, false]);
+  // izleyen kimliği koltukta değil: değişiklik yok
+  assert.equal(baglandi(o, 'yabanci'), false);
+  assert.equal(baglandi(o, 'erman-id'), true);
+  assert.deepEqual(gorunum(o, 'tezcan-id').koltuklar.map(k => k.kopuk), [false, false]);
+  assert.equal(baglandi(o, 'erman-id'), false);
 });

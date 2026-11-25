@@ -1,6 +1,6 @@
 // Cloudflare Worker: wss://<alan>/masa/<KOD>?id=<istemci> → o masanın Durable Object'i.
 // Her masa tek bir nesnede yaşar; oyun durumu orada tutulur ve depoya yazılır.
-import { yeniOda, isle, sureDoldu, gorunum } from './oda.js';
+import { yeniOda, isle, sureDoldu, gorunum, baglandi } from './oda.js';
 
 const KOD = /^[A-Z0-9]{4,8}$/;
 
@@ -33,7 +33,8 @@ export class Masa {
     if (!this.oda) this.oda = yeniOda(kod);
     const [istemci, sunucu] = Object.values(new WebSocketPair());
     this.state.acceptWebSocket(sunucu, [id]);
-    sunucu.send(JSON.stringify(gorunum(this.oda, id)));
+    if (baglandi(this.oda, id)) await this.yayinla({ tip: 'baglanti' });
+    else sunucu.send(JSON.stringify(gorunum(this.oda, id)));
     return new Response(null, { status: 101, webSocket: istemci });
   }
 
@@ -70,7 +71,10 @@ export class Masa {
     const id = this.state.getTags(ws)[0];
     if (!this.oda || !id) return;
     if (this.state.getWebSockets().some(w => w !== ws && this.state.getTags(w)[0] === id)) return;
+    const once = (this.oda.kopuk || []).length;
     const s = isle(this.oda, id, { tip: 'koptu' });
     if (s.olay) await this.yayinla(s.olay);
+    // Masadaki oyuncu koptu: ötekiler adının yanında "bağlı değil" görsün.
+    else if ((this.oda.kopuk || []).length !== once) await this.yayinla({ tip: 'baglanti' });
   }
 }

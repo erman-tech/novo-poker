@@ -118,6 +118,14 @@ export function bekleyenleriOturt(oda) {
   return degisti || gelen.length > 0;
 }
 
+// Yeni bağlantı açıldı: kimlik koltuktaysa "bağlı değil" işareti kalkar. Dönüş: işaret değişti mi
+// (değiştiyse herkese yayınlanır; Erman 25 Kas: masada olmayan oyuncu ötekilere oturuyor görünüyordu).
+export function baglandi(oda, id) {
+  if (!oda.kopuk || !oda.kopuk.includes(id)) return false;
+  oda.kopuk = oda.kopuk.filter(x => x !== id);
+  return koltugu(oda, id) >= 0;
+}
+
 // Bir istemcinin isteğini uygular. Dönüş: { olay } (yayınlanacak animasyon ipucu) ya da { hata }.
 export function islem(oda, id, m) {
   // Bağlantısı kopan oyuncunun koltuğu korunur; aynı kimlikle mesaj gelince bağlı sayılır.
@@ -524,7 +532,7 @@ export function gizle(g, ben = -1) {
 export function gorunum(oda, id, olay = null) {
   return {
     tip: 'durum', rev: oda.rev, kod: oda.kod, oyun: oda.oyun || 'novo',
-    koltuklar: oda.koltuklar.map(k => ({ ad: k.ad, yan: k.yan || null })),
+    koltuklar: oda.koltuklar.map(k => ({ ad: k.ad, yan: k.yan || null, kopuk: !k.bos && !!k.id && (oda.kopuk || []).includes(k.id) })),
     benim: koltugu(oda, id), molaIstek: !!(oda.molaIstek && oda.molaIstek[koltugu(oda, id)]), bekliyor: (oda.bekleyen || []).some(b => b.id === id), sahipMi: oda.sahip === id, ayar: oda.ayar,
     secimler: oda.secimler, hazir: oda.hazir || {}, oto: oda.oto || {}, sohbet: oda.sohbet || [],
     izleyenler: (oda.izleyenler || []).filter(x => x && x.ad).map(x => x.ad), sira: (oda.bekleyen || []).map(b => b.ad), kalkIstek: !!(oda.kalkIstek && oda.kalkIstek[koltugu(oda, id)]), g: gizle(oda.g, koltugu(oda, id)), olay,

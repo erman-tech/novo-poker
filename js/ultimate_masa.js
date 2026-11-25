@@ -122,7 +122,7 @@ function ciz() {
     }
     const levha = document.createElement('div'); levha.className = 'nlevha';
     const fark = o.fis - o.giris;
-    levha.innerHTML = `<div class="ad">${kacis(o.ad)}${o.mola ? ' <span class="mola-etiket">MOLADA</span>' : ''}</div><div class="fis-sayi">${para(o.fis)}</div>
+    levha.innerHTML = `<div class="ad">${kacis(o.ad)}${o.mola ? ' <span class="mola-etiket">MOLADA</span>' : ''}${api && api.koltuklar && api.koltuklar[i] && api.koltuklar[i].kopuk ? ' <span class="mola-etiket kopuk-etiket">BAĞLI DEĞİL</span>' : ''}</div><div class="fis-sayi">${para(o.fis)}</div>
       <div class="fark ${fark > 0 ? 'art' : fark < 0 ? 'eks' : ''}">${fark > 0 ? '+' : fark < 0 ? '−' : '±'}${para(Math.abs(fark))}</div>${o.trips ? '<div class="yuk">trips açık</div>' : ''}`;
     s.append(kartlar, et, daireler, levha);
     alan.appendChild(s);

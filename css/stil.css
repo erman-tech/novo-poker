@@ -461,6 +461,9 @@ input, select {
 .nspot.mola .nkartlar, .nspot.mola .ndaireler { opacity: .25; }
 .nspot.mola .nlevha { opacity: .6; }
 .mola-etiket { font-size: 10px; letter-spacing: 1.5px; background: #ffffff22; border-radius: 6px; padding: 1px 6px; vertical-align: middle; }
+/* Bağlantısı kopmuş oyuncu: koltuğu korunur, ötekiler masada olmadığını görsün (Erman 25 Kas). */
+.kopuk-etiket { background: #b3242f; color: #fff; }
+.lobi-oyuncu .etiket.kopuk { background: #b3242f; color: #fff; }
 
 /* Bahis yerleri: daire çizgisi yok, yalnız yazı (ANTE/EXPRESS/BET) ve çipler */
 .ndaire, .ndaire.express, .ndaire.bet { border-color: transparent; }
