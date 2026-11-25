@@ -110,7 +110,8 @@ function lobiCiz(m) {
     const y = (m.benim >= 0 && m.koltuklar[m.benim].yan) || {};
     yanSatir.hidden = m.benim < 0 || m.oyun === 'ultimate';
     yanSatir.innerHTML = `<button class="btn-ikincil ${y.kasa ? 'oto-acik' : ''}" data-lyan="kasa">Kasaya express: ${y.kasa ? 'Açık' : 'Kapalı'}</button>
-      <button class="btn-ikincil ${y.komsu ? 'oto-acik' : ''}" data-lyan="komsu">Komşuya express: ${y.komsu ? 'Açık' : 'Kapalı'}</button>`;
+      <button class="btn-ikincil ${y.komsu ? 'oto-acik' : ''}" data-lyan="komsu">Komşuya express: ${y.komsu ? 'Açık' : 'Kapalı'}</button>
+      <button class="btn-ikincil ${y.cift ? 'oto-acik' : ''}" data-lyan="cift">Kendime double (ante ve express 2 kat): ${y.cift ? 'Açık' : 'Kapalı'}</button>`;
     yanSatir.querySelectorAll('[data-lyan]').forEach(b => b.onclick = () => { const t = b.dataset.lyan; gonder({ tip: 'yan', [t]: !y[t] }); });
   }
   if (document.activeElement !== $('l-ad')) $('l-ad').value = m.benim >= 0 ? m.koltuklar[m.benim].ad : '';

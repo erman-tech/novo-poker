@@ -292,6 +292,7 @@ export function islem(oda, id, m) {
           const y = { ...(oda.koltuklar[i].yan || {}) };
           if ('kasa' in m) y.kasa = !!m.kasa;
           if ('komsu' in m) y.komsu = !!m.komsu;
+          if ('cift' in m) y.cift = !!m.cift;
           oda.koltuklar[i].yan = y;
           return { olay: { tip: 'yan', koltuk: i } };
         }
@@ -299,6 +300,7 @@ export function islem(oda, id, m) {
         const yan = {};
         if ('kasa' in m) yan.kasa = !!m.kasa;
         if ('komsu' in m) yan.komsu = !!m.komsu;
+        if ('cift' in m) yan.cift = !!m.cift;
         oda.g = yanAyarla(g, i, yan);
         return { olay: { tip: 'yan', koltuk: i } };
       }

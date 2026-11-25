@@ -612,7 +612,7 @@ async function animasyonla(once, yeni, tip) {
   if (tip === 'oyna') {
     const i = once.el.sira;
     ciz();
-    await fisUcur(spotEl(i).querySelector('.nlevha'), spotEl(i).querySelector('.ndaire.bet'), 2 * once.el.ante);
+    await fisUcur(spotEl(i).querySelector('.nlevha'), spotEl(i).querySelector('.ndaire.bet'), 2 * once.el.oyuncular[i].ante);
   }
   if (tip === 'sigorta') {
     const i = once.el.sira;
@@ -622,12 +622,12 @@ async function animasyonla(once, yeni, tip) {
   }
   if (tip === 'pas') {
     const i = once.el.sira;
-    await fisUcur(spotEl(i).querySelector('.ndaire.ante'), kasaRect(), once.el.ante);
+    await fisUcur(spotEl(i).querySelector('.ndaire.ante'), kasaRect(), once.el.oyuncular[i].ante);
   }
   if (tip === 'degistir' || tip === 'alti') {
     const i = once.el.sira;
     if (yeni.el.faz === 'cekme') ciz(); // karar işaretli görünsün (kart henüz gelmez)
-    await fisUcur(spotEl(i).querySelector('.nlevha'), goster(spotEl(i).querySelector('.ncekme')), once.el.ante, 350);
+    await fisUcur(spotEl(i).querySelector('.nlevha'), goster(spotEl(i).querySelector('.ncekme')), once.el.oyuncular[i].ante, 350);
   }
   if (once.el.faz === 'cekme' && yeni.el.faz !== 'cekme') await topluDagit();
   oyunsuzSecim = {};
@@ -981,7 +981,7 @@ function kisaKalem(y) {
 }
 function dkAcilir(pn) { pn.querySelectorAll('.dk-satir').forEach(r => r.onclick = () => r.classList.toggle('acik')); }
 function ayarOzet(o, oto = false) {
-  const y = o.yan || {}, ek = [oto ? 'otomatik' : '', y.kasa ? 'kasaya ex' : '', y.komsu ? 'komşuya ex' : ''].filter(Boolean);
+  const y = o.yan || {}, ek = [oto ? 'otomatik' : '', y.kasa ? 'kasaya ex' : '', y.komsu ? 'komşuya ex' : '', y.cift ? 'double' : ''].filter(Boolean);
   return (o.mola ? 'molada' : 'oyunda') + (ek.length ? ' · ' + ek.join(' · ') : '');
 }
 const ayarDugme = (id, yazi, acik) => `<button class="mola-dugme oto-dugme ${acik ? 'oto-acik' : ''}" id="${id}">${yazi}: ${acik ? 'açık' : 'kapalı'}</button>`;
@@ -993,6 +993,7 @@ function oyuncuAyar(i) {
         <button class="mola-dugme ${o.mola ? 'molada' : ''}" id="oa-mola">${o.mola ? 'Molada · oyuna dön' : 'Oyunda · molaya çık'}</button>
         ${ayarDugme('oa-kasa', `Kasaya express (${para(N.g.ante)})`, y.kasa)}
         ${N.g.oyuncular.length > 1 ? ayarDugme('oa-komsu', `Komşuya express (${para(N.g.ante)})`, y.komsu) : ''}
+        ${ayarDugme('oa-cift', `Kendime double (ante ${para(2 * N.g.ante)}, express ${para(2 * N.g.ante)})`, y.cift)}
       </div>
       <div class="hata">${kacis(hata)}</div>
       <button class="btn-ana" id="oa-tamam">Tamam</button>`;
@@ -1000,6 +1001,7 @@ function oyuncuAyar(i) {
     k.querySelector('#oa-mola').onclick = () => yap(() => { const yeni = molaAyarla(N.g, i, !N.g.oyuncular[i].mola); gecmiseAt(); N.g = yeni; });
     k.querySelector('#oa-kasa').onclick = () => yap(() => { N.g = yanAyarla(N.g, i, { kasa: !(N.g.oyuncular[i].yan || {}).kasa }); });
     if (k.querySelector('#oa-komsu')) k.querySelector('#oa-komsu').onclick = () => yap(() => { N.g = yanAyarla(N.g, i, { komsu: !(N.g.oyuncular[i].yan || {}).komsu }); });
+    k.querySelector('#oa-cift').onclick = () => yap(() => { N.g = yanAyarla(N.g, i, { cift: !(N.g.oyuncular[i].yan || {}).cift }); });
     k.querySelector('#oa-tamam').onclick = () => { perdeKapat(); ciz(); };
   };
   perdeAc('', ciz0);
@@ -1015,6 +1017,7 @@ function benimAyar() {
       ${ayarDugme('ba-oto', 'Otomatik oyna', otom)}
       ${ayarDugme('ba-kasa', `Kasaya express (${para(N.g.ante)})`, y.kasa)}
       ${N.g.oyuncular.length > 1 ? ayarDugme('ba-komsu', `Komşuya express (${para(N.g.ante)})`, y.komsu) : ''}
+      ${ayarDugme('ba-cift', `Kendime double (ante ${para(2 * N.g.ante)}, express ${para(2 * N.g.ante)})`, y.cift)}
       <button class="mola-dugme" id="ba-kalk">Masadan kalk (yerimi sıradakine bırak)</button>
     </div>
     <div class="ne" style="color:var(--soluk);font-size:13px">Express seçimleri bir sonraki elde geçerli; komşun sağındaki oyuncu. El sürerken oyundan çıkarsan el bitince çıkarsın.</div>
@@ -1026,6 +1029,7 @@ function benimAyar() {
     k.querySelector('#ba-oto').onclick = () => { if (yetmez && !otom) return; sec({ tip: 'oto', acik: !otom }); };
     k.querySelector('#ba-kasa').onclick = () => sec({ tip: 'yan', kasa: !y.kasa });
     if (k.querySelector('#ba-komsu')) k.querySelector('#ba-komsu').onclick = () => sec({ tip: 'yan', komsu: !y.komsu });
+    k.querySelector('#ba-cift').onclick = () => sec({ tip: 'yan', cift: !y.cift });
     k.querySelector('#ba-tamam').onclick = perdeKapat;
     k.querySelector('#ba-kalk').onclick = async () => { perdeKapat(); if (await onayla('Masadan kalkılsın mı? Koltuğun boşalır, çiplerin masada kalmaz; sırada bekleyen oturur.', 'Kalk')) online.gonder({ tip: 'kalk' }); };
   });
