@@ -427,17 +427,22 @@ function panelCiz0() {
       const benimO = ben >= 0 ? g.oyuncular[ben] : null;
       const yetmez = benimO && benimO.fis < 4 * g.ante;
       const hazirim = !!hz[ben], otom = !!oto[ben];
+      // Ara ver (Erman 26 Kas: masadan kalkmadan tuvalete gitmek gibi): sonraki ellere girmez, koltuk ve para durur
+      const aradayim = !!(benimO && (benimO.mola || online.molaIstek));
       pn.innerHTML = `<div class="bekleme sonuc-panel">${baslik}
         ${satirlar((o, i) => `<span class="dk-durum ${hz[i] ? 'hazir' : o.mola ? 'kapali' : ''}" title="${o.mola ? 'oyunda değil' : hz[i] ? (oto[i] ? 'otomatik' : 'hazır') : o.fis < 4 * g.ante ? 'parası bitti' : 'bekleniyor'}">${o.mola ? 'mola' : hz[i] ? (oto[i] ? '✓ oto' : '✓') : o.fis < 4 * g.ante ? '$0' : '…'}</span>`)}
         <div class="satir" style="width:min(640px,100%)">
           ${online.sahipMi ? '<button class="btn-ikincil" id="n-yukle">Para yükle</button>' : ''}
           ${benimO ? '<button class="btn-ikincil" id="n-ayarlarim">Ayarlarım ⚙</button>' : ''}
-          ${hazirim ? '<button class="btn-tehlike" id="n-iptal">İptal</button>' : `<button class="btn-ana" id="n-hazir" ${ben < 0 || yetmez ? 'disabled' : ''}>${el ? 'Sonraki ele gir' : 'İlk ele gir'}</button>`}
+          ${aradayim ? '' : hazirim ? '<button class="btn-tehlike" id="n-iptal">İptal</button>' : `<button class="btn-ana" id="n-hazir" ${ben < 0 || yetmez ? 'disabled' : ''}>${el ? 'Sonraki ele gir' : 'İlk ele gir'}</button>`}
+          ${benimO ? (aradayim ? `<button class="btn-ana" id="n-don" ${yetmez ? 'disabled' : ''}>Aradan dön · sıradaki ele gir</button>` : '<button class="btn-ikincil" id="n-ara">Ara ver</button>') : ''}
         </div>
-        <div class="hata">${kacis(hata)}${hata ? ' ' : ''}${yetmez ? (online.sahipMi ? 'Paran bitti: kendine para yükleyebilirsin.' : 'Paran bitti; masayı açan para yüklerse oyuna dönebilirsin.') : hazirim ? (otom ? 'Otomatik oynuyorsun: parası yettikçe her ele girersin. Her kararın süresi 10 sn; dolunca kart çekmeden geçilir, son kararda pas.' : 'Bu ele giriyorsun; vazgeçmek için İptal.') : ben >= 0 ? (benimO.mola || online.molaIstek ? 'Oyunda değilsin: sana kart dağıtılmaz. Dönmek için Ayarlarım → Oyuna gir.' : `Basmasan da ele girersin. Ayarların: ${ayarOzet(benimO, otom)}.`) : ''}</div></div>`;
+        <div class="hata">${kacis(hata)}${hata ? ' ' : ''}${yetmez ? (online.sahipMi ? 'Paran bitti: kendine para yükleyebilirsin.' : 'Paran bitti; masayı açan para yüklerse oyuna dönebilirsin.') : hazirim ? (otom ? 'Otomatik oynuyorsun: parası yettikçe her ele girersin. Her kararın süresi 10 sn; dolunca kart çekmeden geçilir, son kararda pas.' : 'Bu ele giriyorsun; vazgeçmek için İptal.') : ben >= 0 ? (aradayim ? 'Aradasın: sana kart dağıtılmaz, koltuğun ve paran duruyor. Dönünce "Aradan dön"e bas.' : `Basmasan da ele girersin. Ayarların: ${ayarOzet(benimO, otom)}.`) : ''}</div></div>`;
       if ($('n-yukle')) $('n-yukle').onclick = yukleAc;
       if ($('n-hazir')) $('n-hazir').onclick = () => { ses.acil(); konus.kilidiAc(); online.gonder({ tip: 'hazir' }); };
       if ($('n-iptal')) $('n-iptal').onclick = () => online.gonder({ tip: 'hazir', iptal: true });
+      if ($('n-ara')) $('n-ara').onclick = () => online.gonder({ tip: 'mola', mola: true });
+      if ($('n-don')) $('n-don').onclick = () => { ses.acil(); konus.kilidiAc(); online.gonder({ tip: 'mola', mola: false }); online.gonder({ tip: 'hazir' }); };
       if ($('n-ayarlarim')) $('n-ayarlarim').onclick = () => { ses.acil(); konus.kilidiAc(); benimAyar(); };
       dkAcilir(pn);
       return;
