@@ -85,6 +85,7 @@
       <label>Başlangıç parası<input value="$1.000 (herkes)" disabled></label>
       <label>Ante<select id="l-ante"><option>5</option><option>10</option><option>25</option><option>50</option><option>100</option></select></label>
       <label>Masa<select id="l-masa"><option value="klasik">Klasik</option><option value="lacivert">Lacivert</option><option value="yesil">Yeşil</option><option value="antrasit">Antrasit</option></select></label>
+      <label id="l-yankural-et">Yan express<select id="l-yankural"><option value="hepsi">Kasaya ve komşulara açık</option><option value="kasa">Yalnız kasaya</option><option value="komsu">Yalnız komşulara</option><option value="yok">Kapalı</option></select></label>
     </div>
     <div class="satir" id="l-yan" hidden></div>
     <div class="ne" id="l-not"></div>
@@ -111,6 +112,9 @@
     </label>
     <label class="sadece-novo">Ante (express ve kart çekme de bu kadar, oyna 2 katı)
       <select id="k-ante"><option>5</option><option>10</option><option selected>25</option><option>50</option><option>100</option></select>
+    </label>
+    <label class="sadece-novo">Yan express (masa açılınca değişmez)
+      <select id="k-yankural"><option value="hepsi">Kasaya ve komşulara açık</option><option value="kasa">Yalnız kasaya</option><option value="komsu">Yalnız komşulara</option><option value="yok">Kapalı</option></select>
     </label>
     <label class="sadece-texas">Körler (10/20 ile başlar) kaç elde bir yükselsin?
       <select id="k-kor">

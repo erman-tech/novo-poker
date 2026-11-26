@@ -406,3 +406,18 @@ test('bağlantısı kopan oyuncu ötekilere "bağlı değil" görünür, dönün
   assert.deepEqual(gorunum(o, 'tezcan-id').koltuklar.map(k => k.kopuk), [false, false]);
   assert.equal(baglandi(o, 'erman-id'), false);
 });
+
+test('masa yan express kuralı: lobide seçilir, oyun başlayınca değişmez (Erman 27 Kas)', () => {
+  const o = yeniOdaIle(['A', 'B']);
+  isle(o, 'id0', { tip: 'yan', kasa: true, komsu: true });
+  assert.ok(isle(o, 'id1', { tip: 'ayar', yan: 'kasa' }).hata, 'ayarı yalnız masayı açan seçer');
+  assert.ok(isle(o, 'id0', { tip: 'ayar', yan: 'bazen' }).hata);
+  assert.equal(isle(o, 'id0', { tip: 'ayar', yan: 'kasa' }).olay.tip, 'ayar');
+  assert.equal(o.koltuklar[0].yan.komsu, false, 'kapanan taraftaki seçim düşer');
+  assert.ok(isle(o, 'id1', { tip: 'yan', komsu: true }).hata, 'lobide kapalı tarafa oynanamaz');
+  islem(o, 'id0', { tip: 'basla' });
+  assert.equal(o.g.yanKural, 'kasa');
+  assert.ok(isle(o, 'id0', { tip: 'ayar', yan: 'hepsi' }).hata, 'oyun başlayınca değişmez');
+  assert.ok(isle(o, 'id0', { tip: 'yan', komsu: true }).hata);
+  assert.equal(isle(o, 'id0', { tip: 'yan', kasa: true }).olay.tip, 'yan');
+});

@@ -1,7 +1,7 @@
 // Novo Poker masası (iPad). Kasaya karşı; oyuncu kartları açık, her şey bu ekranda.
 import {
   yeniNovo, novoDagit, novoHamle, novoYasal, oyunSatinAl, novoYenidenBaslat, paraYukle, molaAyarla, yanAyarla,
-  katilabilir, ODEME, BONUS, EL_ADI, YAKILAN_ILK, sinif, bonusAnahtari, kombinasyonlar, betOrani, perDegeri, doperTuru, komsuBahisleri
+  katilabilir, ODEME, BONUS, EL_ADI, YAKILAN_ILK, sinif, bonusAnahtari, kombinasyonlar, betOrani, perDegeri, doperTuru, komsuBahisleri, yanIzinli
 } from './novo.js';
 import { yiginEl, ustCipEl } from './fis.js';
 import { DEGER_AD, RENK_SIMGE } from './kart.js';
@@ -125,8 +125,8 @@ function kaydet() {
 export function novoKaydiVar() {
   try { return !!JSON.parse(localStorage.getItem(ANAHTAR) || 'null'); } catch (e) { return false; }
 }
-export function novoAc({ adlar, baslangicFis, ante }) {
-  N = { g: yeniNovo({ adlar, kod: 'N', baslangicFis, ante }), gecmis: [] };
+export function novoAc({ adlar, baslangicFis, ante, yanKural = 'hepsi' }) {
+  N = { g: yeniNovo({ adlar, kod: 'N', baslangicFis, ante, yanKural }), gecmis: [] };
   kaydet();
   ekran();
 }
@@ -1022,15 +1022,15 @@ function oyuncuAyar(i) {
     k.innerHTML = `<div style="font-size:20px;font-weight:800">${kacis(o.ad)}</div>
       <div class="mola-satir" style="flex-direction:column">
         <button class="mola-dugme ${o.mola ? 'molada' : ''}" id="oa-mola">${o.mola ? 'Molada · oyuna dön' : 'Oyunda · molaya çık'}</button>
-        ${ayarDugme('oa-kasa', `Kasaya express (${para(N.g.ante)})`, y.kasa)}
-        ${N.g.oyuncular.length > 1 ? ayarDugme('oa-komsu', `Komşulara express (her birine ${para(N.g.ante)})`, y.komsu) : ''}
+        ${yanIzinli(N.g, 'kasa') ? ayarDugme('oa-kasa', `Kasaya express (${para(N.g.ante)})`, y.kasa) : ''}
+        ${N.g.oyuncular.length > 1 && yanIzinli(N.g, 'komsu') ? ayarDugme('oa-komsu', `Komşulara express (her birine ${para(N.g.ante)})`, y.komsu) : ''}
         ${ayarDugme('oa-cift', `Kendime double (ante ${para(2 * N.g.ante)}, express ${para(2 * N.g.ante)})`, y.cift)}
       </div>
       <div class="hata">${kacis(hata)}</div>
       <button class="btn-ana" id="oa-tamam">Tamam</button>`;
     const yap = fn => { try { fn(); hata = ''; kaydet(); } catch (e) { hata = e.message; } ciz0(k); panelCiz(); };
     k.querySelector('#oa-mola').onclick = () => yap(() => { const yeni = molaAyarla(N.g, i, !N.g.oyuncular[i].mola); gecmiseAt(); N.g = yeni; });
-    k.querySelector('#oa-kasa').onclick = () => yap(() => { N.g = yanAyarla(N.g, i, { kasa: !(N.g.oyuncular[i].yan || {}).kasa }); });
+    if (k.querySelector('#oa-kasa')) k.querySelector('#oa-kasa').onclick = () => yap(() => { N.g = yanAyarla(N.g, i, { kasa: !(N.g.oyuncular[i].yan || {}).kasa }); });
     if (k.querySelector('#oa-komsu')) k.querySelector('#oa-komsu').onclick = () => yap(() => { N.g = yanAyarla(N.g, i, { komsu: !(N.g.oyuncular[i].yan || {}).komsu }); });
     k.querySelector('#oa-cift').onclick = () => yap(() => { N.g = yanAyarla(N.g, i, { cift: !(N.g.oyuncular[i].yan || {}).cift }); });
     k.querySelector('#oa-tamam').onclick = () => { perdeKapat(); ciz(); };
@@ -1046,8 +1046,8 @@ function benimAyar() {
     <div class="mola-satir" style="flex-direction:column">
       <button class="mola-dugme ${mola ? 'molada' : ''}" id="ba-mola">${mola ? 'Oyunda değilsin · oyuna gir' : 'Oyundasın · oyundan çık'}</button>
       ${ayarDugme('ba-oto', 'Otomatik oyna', otom)}
-      ${ayarDugme('ba-kasa', `Kasaya express (${para(N.g.ante)})`, y.kasa)}
-      ${N.g.oyuncular.length > 1 ? ayarDugme('ba-komsu', `Komşulara express (her birine ${para(N.g.ante)})`, y.komsu) : ''}
+      ${yanIzinli(N.g, 'kasa') ? ayarDugme('ba-kasa', `Kasaya express (${para(N.g.ante)})`, y.kasa) : ''}
+      ${N.g.oyuncular.length > 1 && yanIzinli(N.g, 'komsu') ? ayarDugme('ba-komsu', `Komşulara express (her birine ${para(N.g.ante)})`, y.komsu) : ''}
       ${ayarDugme('ba-cift', `Kendime double (ante ${para(2 * N.g.ante)}, express ${para(2 * N.g.ante)})`, y.cift)}
       <button class="mola-dugme" id="ba-kalk">Masadan kalk (yerimi sıradakine bırak)</button>
     </div>
@@ -1058,7 +1058,7 @@ function benimAyar() {
     const sec = m => { online.gonder(m); perdeKapat(); setTimeout(benimAyar, 350); };
     k.querySelector('#ba-mola').onclick = () => git({ tip: 'mola', mola: !mola });
     k.querySelector('#ba-oto').onclick = () => { if (yetmez && !otom) return; sec({ tip: 'oto', acik: !otom }); };
-    k.querySelector('#ba-kasa').onclick = () => sec({ tip: 'yan', kasa: !y.kasa });
+    if (k.querySelector('#ba-kasa')) k.querySelector('#ba-kasa').onclick = () => sec({ tip: 'yan', kasa: !y.kasa });
     if (k.querySelector('#ba-komsu')) k.querySelector('#ba-komsu').onclick = () => sec({ tip: 'yan', komsu: !y.komsu });
     k.querySelector('#ba-cift').onclick = () => sec({ tip: 'yan', cift: !y.cift });
     k.querySelector('#ba-tamam').onclick = perdeKapat;

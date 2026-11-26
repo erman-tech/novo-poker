@@ -3,7 +3,7 @@
 // aynı dosyayı kullanır. Deste ve kasanın kapalı kartları yalnız burada durur; istemcilere
 // giden görünümde yoktur, yani kimse telefonundan kasanın elini ya da sıradaki kartı göremez.
 import {
-  yeniNovo, yanAyarla, novoDagit, novoHamle, novoYasal, oyunSatinAl, novoYenidenBaslat, paraYukle, molaAyarla,
+  yeniNovo, yanAyarla, YAN_KURALLARI, yanIzinli, novoDagit, novoHamle, novoYasal, oyunSatinAl, novoYenidenBaslat, paraYukle, molaAyarla,
   NOVO_AZAMI_OYUNCU, ANTE_SECENEKLERI,
 } from '../js/novo.js';
 import {
@@ -201,14 +201,27 @@ export function islem(oda, id, m) {
         if (g) return { hata: 'Oyun başladıktan sonra ayar değişmez.' };
         const a = Number(m.ante);
         if (a && ANTE_SECENEKLERI.includes(a)) oda.ayar.ante = a;
+        // Yan express kuralı (Erman 27 Kas): oyun başlamadan seçilir, sonra o masa için değişmez.
+        if ('yan' in m) {
+          if (!YAN_KURALLARI.includes(m.yan)) return { hata: 'Geçersiz yan express kuralı.' };
+          oda.ayar.yan = m.yan;
+          const kural = { yanKural: m.yan };
+          oda.koltuklar.forEach(k => {
+            if (!k.yan) return;
+            k.yan = { ...k.yan };
+            if (!yanIzinli(kural, 'kasa')) k.yan.kasa = false;
+            if (!yanIzinli(kural, 'komsu')) k.yan.komsu = false;
+          });
+        }
         return { olay: { tip: 'ayar' } };
       }
       case 'basla': {
         if (id !== oda.sahip) return { hata: 'Oyunu masayı açan başlatır.' };
         if (g) return { hata: 'Oyun zaten başladı.' };
         if (!oda.koltuklar.length) return { hata: 'Masada oyuncu yok.' };
-        oda.g = motor(oda).yeni({ adlar: oda.koltuklar.map(k => k.ad), kod: oda.kod, baslangicFis: oda.ayar.baslangicFis, ante: oda.ayar.ante });
-        if (oda.oyun !== 'ultimate') oda.koltuklar.forEach((k, j) => { if (k.yan) oda.g = yanAyarla(oda.g, j, k.yan); });
+        oda.g = motor(oda).yeni({ adlar: oda.koltuklar.map(k => k.ad), kod: oda.kod, baslangicFis: oda.ayar.baslangicFis, ante: oda.ayar.ante, yanKural: oda.ayar.yan || 'hepsi' });
+        if (oda.oyun !== 'ultimate') oda.koltuklar.forEach((k, j) => { if (k.yan) oda.g = yanAyarla(oda.g, j, {
+          ...k.yan, kasa: !!k.yan.kasa && yanIzinli(oda.g, 'kasa'), komsu: !!k.yan.komsu && yanIzinli(oda.g, 'komsu') }); });
         return { olay: { tip: 'basla' } };
       }
       case 'dagit':
@@ -297,6 +310,9 @@ export function islem(oda, id, m) {
         if (oda.oyun === 'ultimate') return { hata: 'Yan express yalnız Novo masasında.' };
         if (!g) {
           // Oyun başlamadan seçilir (lobide); oyun başlayınca ilk elden geçerli.
+          const kural = { yanKural: oda.ayar.yan || 'hepsi' };
+          if (m.kasa && !yanIzinli(kural, 'kasa')) return { hata: 'Bu masada kasaya express kapalı.' };
+          if (m.komsu && !yanIzinli(kural, 'komsu')) return { hata: 'Bu masada komşulara express kapalı.' };
           const y = { ...(oda.koltuklar[i].yan || {}) };
           if ('kasa' in m) y.kasa = !!m.kasa;
           if ('komsu' in m) y.komsu = !!m.komsu;

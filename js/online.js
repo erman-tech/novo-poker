@@ -109,8 +109,11 @@ function lobiCiz(m) {
   if (yanSatir) {
     const y = (m.benim >= 0 && m.koltuklar[m.benim].yan) || {};
     yanSatir.hidden = m.benim < 0 || m.oyun === 'ultimate';
-    yanSatir.innerHTML = `<button class="btn-ikincil ${y.kasa ? 'oto-acik' : ''}" data-lyan="kasa">Kasaya express: ${y.kasa ? 'Açık' : 'Kapalı'}</button>
-      <button class="btn-ikincil ${y.komsu ? 'oto-acik' : ''}" data-lyan="komsu">Komşulara express: ${y.komsu ? 'Açık' : 'Kapalı'}</button>
+    // Masanın yan express kuralı (masayı açan seçer, oyun başlayınca değişmez): kapalı taraf gösterilmez.
+    const kural = (m.ayar && m.ayar.yan) || 'hepsi';
+    const kasaAcik = kural === 'hepsi' || kural === 'kasa', komsuAcik = kural === 'hepsi' || kural === 'komsu';
+    yanSatir.innerHTML = (kasaAcik ? `<button class="btn-ikincil ${y.kasa ? 'oto-acik' : ''}" data-lyan="kasa">Kasaya express: ${y.kasa ? 'Açık' : 'Kapalı'}</button>` : '')
+      + (komsuAcik ? `<button class="btn-ikincil ${y.komsu ? 'oto-acik' : ''}" data-lyan="komsu">Komşulara express: ${y.komsu ? 'Açık' : 'Kapalı'}</button>` : '') + `
       <button class="btn-ikincil ${y.cift ? 'oto-acik' : ''}" data-lyan="cift">Kendime double (ante ve express 2 kat): ${y.cift ? 'Açık' : 'Kapalı'}</button>`;
     yanSatir.querySelectorAll('[data-lyan]').forEach(b => b.onclick = () => { const t = b.dataset.lyan; gonder({ tip: 'yan', [t]: !y[t] }); });
   }
@@ -118,6 +121,7 @@ function lobiCiz(m) {
   $('l-ayar').querySelectorAll('select').forEach(s => { s.disabled = !m.sahipMi; });
   $('l-ante').value = String(m.ayar.ante);
   if ($('l-masa')) $('l-masa').value = m.ayar.masa || 'yesil';
+  if ($('l-yankural')) { $('l-yankural').value = m.ayar.yan || 'hepsi'; $('l-yankural-et').hidden = m.oyun === 'ultimate'; }
   $('l-basla').hidden = !m.sahipMi;
   $('l-not').textContent = m.benim < 0 ? 'Masa dolu ya da oyun başladı: izleyici olarak bağlısın.'
     : m.sahipMi ? `Herkes geldiğinde oyunu başlat. Herkes ${para(m.ayar.baslangicFis)} ile başlar, ante ${para(m.ayar.ante)}. Para yalnız sen yükleyebilirsin.`
@@ -231,6 +235,7 @@ export function onlineBagla() {
   $('l-ad-kaydet').onclick = () => { const a = $('l-ad').value.trim(); if (a) gonder({ tip: 'ad', ad: a }); };
   $('l-ante').onchange = () => gonder({ tip: 'ayar', ante: Number($('l-ante').value) });
   $('l-masa').onchange = () => gonder({ tip: 'ayar', masa: $('l-masa').value });
+  if ($('l-yankural')) $('l-yankural').onchange = () => gonder({ tip: 'ayar', yan: $('l-yankural').value });
   $('l-basla').onclick = () => { ses.acil(); $('l-hata').textContent = ''; gonder({ tip: 'basla' }); };
   $('l-cik').onclick = async () => { if (await onayla('Masadan çıkılsın mı?', 'Çık')) cik(); };
   $('l-davet').onclick = async () => {
